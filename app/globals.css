@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tl-bg: #05070b;
+  --tl-fg: #f5f7fb;
+  --tl-surface: #0e1219;
+  --tl-surface-2: #151b26;
+  --tl-border: #1e2733;
+  --tl-muted: #8892a6;
+
+  --tl-blue: #2f6bff;
+  --tl-blue-light: #e8f0ff;
+  --tl-blue-dim: rgba(47, 107, 255, 0.14);
+
+  --tl-green: #22c55e;
+  --tl-red: #ef4444;
+  --tl-amber: #f59e0b;
+}
+
+* {
+  border-color: var(--tl-border);
+}
+
+body {
+  color: var(--tl-fg);
+  background: var(--tl-bg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@layer components {
+  .card {
+    @apply bg-surface border border-border rounded-2xl;
+  }
+
+  .brand-stripe {
+    height: 2px;
+    background: linear-gradient(90deg, var(--tl-blue), transparent 70%);
+  }
+
+  .btn-tl {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium
+      bg-surface-2 text-foreground border border-border transition-colors hover:bg-[#1a2230]
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-tl-blue {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium
+      text-white transition-colors disabled:opacity-50 disabled:pointer-events-none;
+    background: var(--tl-blue);
+  }
+  .btn-tl-blue:hover {
+    background: #2559d6;
+  }
+
+  .btn-tl-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium
+      text-muted border border-border hover:text-foreground hover:border-blue transition-colors;
+  }
+
+  .input-tl {
+    @apply w-full rounded-lg bg-surface-2 border border-border px-3 py-2 text-sm text-foreground
+      placeholder:text-muted focus:outline-none focus:ring-1;
+    caret-color: var(--tl-blue);
+  }
+  .input-tl:focus {
+    border-color: var(--tl-blue);
+    box-shadow: 0 0 0 1px var(--tl-blue);
+  }
+
+  .nav-item {
+    @apply flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-muted hover:text-foreground
+      hover:bg-surface-2 transition-colors;
+  }
+  .nav-item.active {
+    @apply text-white;
+    background: var(--tl-blue-dim);
+    color: var(--tl-blue);
+  }
+
+  .pill {
+    @apply px-2.5 py-1 rounded-full text-[11px] font-medium border;
+    border-color: var(--tl-border);
+    color: var(--tl-blue);
+    background: var(--tl-blue-dim);
+  }
+
+  .tl-table {
+    @apply w-full text-xs;
+  }
+  .tl-table thead th {
+    @apply text-left text-[11px] font-medium text-muted uppercase tracking-wide px-3 py-2 border-b border-border;
+  }
+  .tl-table tbody td {
+    @apply px-3 py-2.5 border-b border-border;
+  }
+  .tl-table tbody tr:hover {
+    @apply bg-surface-2 cursor-pointer;
+  }
+
+  .glow-text {
+    text-shadow: 0 0 24px var(--tl-blue-dim);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
