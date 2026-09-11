@@ -14,6 +14,7 @@ import {
   LogOut,
   Zap,
   Flame,
+  Settings,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn, formatNumber } from '@/lib/utils'
@@ -29,6 +30,7 @@ const NAV = [
   { href: '/tareas', label: 'Tareas', icon: KanbanSquare },
   { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   { href: '/recompensas', label: 'Recompensas', icon: Gift },
+  { href: '/ajustes', label: 'Ajustes', icon: Settings },
 ]
 
 export default function Sidebar({ perfil }: { perfil: Perfil }) {

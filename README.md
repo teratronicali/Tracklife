@@ -26,6 +26,11 @@ pero con identidad propia en azul/negro/blanco.
 - **Tareas** — kanban (Pendiente / En progreso / Hecho) con etiquetas y subtareas.
 - **Leaderboard** — ranking global por XP con podio top 3.
 - **Recompensas** — desbloqueos por nivel.
+- **Onboarding** — cuestionario obligatorio al primer ingreso: habitos a adoptar, deporte(s)
+  practicado(s) (crea ejercicios/rutinas por deporte automaticamente), enfoque financiero y
+  una primera meta opcional. Se puede volver a hacer desde **Ajustes**.
+- **Ajustes** — resumen de personalizacion + integracion con **Strava** (importa entrenamientos
+  automaticamente: running, ciclismo, natacion, etc.).
 
 ## Gamificacion
 
@@ -37,8 +42,9 @@ del usuario de forma atomica. La tabla de XP y los rangos (Novato → Leyenda) e
 ## Puesta en marcha
 
 1. Crea un proyecto nuevo en [Supabase](https://supabase.com).
-2. En el SQL Editor de ese proyecto, ejecuta el contenido de
-   `supabase/migrations/001_init.sql` (crea todas las tablas, RLS y funciones necesarias).
+2. En el SQL Editor de ese proyecto, ejecuta en orden el contenido de
+   `supabase/migrations/001_init.sql` y luego `002_onboarding_strava.sql`
+   (crea todas las tablas, RLS y funciones necesarias).
 3. Copia `.env.local.example` a `.env.local` y completa con los datos de tu proyecto
    (Settings → API en el dashboard de Supabase):
 
@@ -59,18 +65,33 @@ del usuario de forma atomica. La tabla de XP y los rangos (Novato → Leyenda) e
    ```
 
 5. Abre [http://localhost:3000](http://localhost:3000), crea una cuenta desde `/signup`
-   (el perfil de gamificacion se crea automaticamente via trigger) y empieza a ganar XP.
+   (el perfil de gamificacion se crea automaticamente via trigger), completa el cuestionario
+   de onboarding y empieza a ganar XP.
+
+### Activar Strava (opcional)
+
+1. Crea una app en <https://www.strava.com/settings/api>. Como "Authorization Callback Domain"
+   pon el dominio donde corra la app (ej. `localhost` en desarrollo, o tu dominio de Vercel).
+2. Copia el **Client ID** y **Client Secret** a tu `.env.local`:
+   ```
+   STRAVA_CLIENT_ID=...
+   STRAVA_CLIENT_SECRET=...
+   ```
+3. Reinicia el servidor. En **Ajustes** aparecera el boton "Conectar con Strava".
 
 ## Estructura
 
 ```
 app/
-  (app)/            rutas autenticadas (sidebar + modulos)
-  login, signup      auth publica
-components/          vistas por modulo (client components)
+  (app)/             rutas autenticadas (sidebar + modulos)
+  api/strava/         OAuth + sincronizacion de actividades
+  login, signup, onboarding   auth y personalizacion inicial
+components/           vistas por modulo (client components)
 lib/
-  supabase/          clientes de Supabase (browser/server)
-  gamification.ts    XP, niveles y rangos
-  types.ts           tipos compartidos
-supabase/migrations/ esquema SQL
+  supabase/           clientes de Supabase (browser/server)
+  gamification.ts     XP, niveles y rangos
+  onboarding.ts        habitos/deportes sugeridos, mapeo de tipos de Strava
+  strava.ts            helpers de OAuth y fetch de actividades
+  types.ts             tipos compartidos
+supabase/migrations/  esquema SQL
 ```

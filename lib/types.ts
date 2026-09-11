@@ -6,6 +6,10 @@ export interface Perfil {
   nivel: number
   racha_actual: number
   mejor_racha: number
+  onboarding_completado: boolean
+  deportes: string[]
+  enfoque_financiero: string[]
+  presupuesto_mensual: number | null
   created_at: string
 }
 
@@ -82,6 +86,8 @@ export interface Ejercicio {
   created_at: string
 }
 
+export type FuenteRegistro = 'manual' | 'strava'
+
 export interface EntrenamientoRegistro {
   id: string
   usuario_id: string
@@ -92,6 +98,22 @@ export interface EntrenamientoRegistro {
   fecha: string
   created_at: string
   ejercicio?: Ejercicio
+  fuente: FuenteRegistro
+  strava_activity_id: number | null
+  distancia_km: number | null
+  duracion_min: number | null
+  tipo_actividad: string
+}
+
+export interface IntegracionStrava {
+  usuario_id: string
+  athlete_id: number
+  access_token: string
+  refresh_token: string
+  expira_en: string
+  scope: string | null
+  ultima_sincronizacion: string | null
+  conectado_en: string
 }
 
 export interface NutricionComida {

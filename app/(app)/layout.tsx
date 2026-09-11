@@ -18,6 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .single<Perfil>()
 
   if (!perfil) redirect('/login')
+  if (!perfil.onboarding_completado) redirect('/onboarding')
 
   return (
     <div className="flex min-h-screen bg-background">
