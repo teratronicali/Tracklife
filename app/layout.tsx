@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Montserrat, Open_Sans } from "next/font/google";
 import "./globals.css";
 import ToasterProvider from "@/components/ToasterProvider";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  variable: "--font-montserrat",
+  weight: ["500", "600", "700", "800"],
 });
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+const openSans = Open_Sans({
+  subsets: ["latin"],
+  variable: "--font-open-sans",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "TrackLife — Gamifica tu disciplina",
+  title: "TrackLife — Rastrea tu vida",
   description: "Habitos, finanzas, entrenamiento, metas y tareas en un solo lugar. Gana XP, sube de nivel y compite en el ranking.",
 };
 
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${montserrat.variable} ${openSans.variable} antialiased bg-background text-foreground`}
       >
         {children}
         <ToasterProvider />

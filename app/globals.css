@@ -3,13 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --tl-bg: #05070b;
-  --tl-fg: #f5f7fb;
-  --tl-surface: #0e1219;
-  --tl-surface-2: #151b26;
-  --tl-border: #1e2733;
-  --tl-muted: #8892a6;
+  /* Colores oficiales de marca (Brand Guidelines v1.0) */
+  --tl-woodsmoke: #161616;
+  --tl-off-white: #f7f6f2;
+  --tl-navy: #0b3a6e;
 
+  --tl-bg: var(--tl-woodsmoke);
+  --tl-fg: var(--tl-off-white);
+  --tl-surface: #1e1e1d;
+  --tl-surface-2: #262625;
+  --tl-surface-3: #313130;
+  --tl-border: #383836;
+  --tl-muted: #93938c;
+
+  /* Azul de acento interactivo: extendido del degradado real del isotipo
+     (el swatch oficial solo capturo el navy #0b3a6e; este tono mas vivo
+     es el que se ve en el brazo del icono y en "Life" del wordmark, y es
+     el que necesitamos para botones/enlaces legibles sobre fondo oscuro) */
   --tl-blue: #2f6bff;
   --tl-blue-light: #e8f0ff;
   --tl-blue-dim: rgba(47, 107, 255, 0.14);
@@ -17,6 +27,8 @@
   --tl-green: #22c55e;
   --tl-red: #ef4444;
   --tl-amber: #f59e0b;
+
+  --font-display: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
 }
 
 * {
@@ -26,7 +38,11 @@
 body {
   color: var(--tl-fg);
   background: var(--tl-bg);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-open-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-display);
 }
 
 @layer components {
