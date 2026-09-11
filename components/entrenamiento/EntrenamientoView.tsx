@@ -1,13 +1,22 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Plus, X, Check, Loader2, Trash2, Dumbbell, Utensils } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts'
 import { createClient } from '@/lib/supabase/client'
 import { formatNumber, lastNDates } from '@/lib/utils'
-import { GRUPOS_MUSCULARES, type Ejercicio, type EntrenamientoRegistro, type NutricionComida, type NutricionMeta } from '@/lib/types'
+import {
+  GRUPOS_MUSCULARES,
+  type Ejercicio,
+  type EntrenamientoRegistro,
+  type NutricionComida,
+  type NutricionMeta,
+  type Perfil,
+} from '@/lib/types'
 import { XP_TABLE } from '@/lib/gamification'
+import { otorgarXP } from '@/lib/xp-client'
 
 const COLORES = ['#2f6bff', '#60a5fa', '#93c5fd', '#f59e0b', '#94a3b8', '#38bdf8', '#a78bfa', '#34d399']
 
@@ -46,14 +55,17 @@ export default function EntrenamientoView({
   comidasIniciales,
   metaNutricionInicial,
   usuarioId,
+  perfil,
 }: {
   ejerciciosIniciales: Ejercicio[]
   registrosIniciales: EntrenamientoRegistro[]
   comidasIniciales: NutricionComida[]
   metaNutricionInicial: NutricionMeta | null
   usuarioId: string
+  perfil: Perfil
 }) {
   const supabase = createClient()
+  const router = useRouter()
   const [tab, setTab] = useState<'entrenamiento' | 'dieta'>('entrenamiento')
 
   const [ejercicios, setEjercicios] = useState(ejerciciosIniciales)
@@ -177,10 +189,10 @@ export default function EntrenamientoView({
       return
     }
     setRegistros((prev) => [data as EntrenamientoRegistro, ...prev])
-    await supabase.rpc('add_xp', { p_xp: XP_TABLE.entrenamiento, p_tipo: 'entrenamiento' })
-    toast.success(`+${XP_TABLE.entrenamiento} XP registrados`)
+    await otorgarXP(supabase, perfil, { p_xp: XP_TABLE.entrenamiento, p_tipo: 'entrenamiento' })
     setGuardando(false)
     setModalSet(false)
+    router.refresh()
   }
 
   async function eliminarRegistro(id: string) {
@@ -223,7 +235,8 @@ export default function EntrenamientoView({
     setComidaKcal('')
     setGuardando(false)
     setModalComida(false)
-    toast.success('Comida registrada')
+    await otorgarXP(supabase, perfil, { p_xp: XP_TABLE.nutricion, p_tipo: 'nutricion' })
+    router.refresh()
   }
 
   async function eliminarComida(id: string) {

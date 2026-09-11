@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
-import type { Habito } from '@/lib/types'
+import { otorgarXP } from '@/lib/xp-client'
+import type { Habito, Perfil } from '@/lib/types'
 
 const MOMENTO_LABEL: Record<string, string> = {
   manana: 'Manana',
@@ -16,9 +17,11 @@ const MOMENTO_LABEL: Record<string, string> = {
 export default function HabitosHoyWidget({
   habitos,
   completadosHoy,
+  perfil,
 }: {
   habitos: Habito[]
   completadosHoy: string[]
+  perfil: Perfil
 }) {
   const supabase = createClient()
   const router = useRouter()
@@ -36,7 +39,7 @@ export default function HabitosHoyWidget({
         .delete()
         .eq('habito_id', habito.id)
         .eq('fecha', new Date().toISOString().slice(0, 10))
-      await supabase.rpc('add_xp', { p_xp: -habito.xp_valor, p_tipo: 'habito_revertido' })
+      await otorgarXP(supabase, perfil, { p_xp: -habito.xp_valor, p_tipo: 'habito_revertido' })
     } else {
       const { error } = await supabase.from('habito_registros').insert({
         habito_id: habito.id,
@@ -47,12 +50,11 @@ export default function HabitosHoyWidget({
         setCargando(null)
         return
       }
-      await supabase.rpc('add_xp', {
+      await otorgarXP(supabase, perfil, {
         p_xp: habito.xp_valor,
         p_tipo: 'habito',
         p_descripcion: habito.nombre,
       })
-      toast.success(`+${habito.xp_valor} XP`)
     }
 
     await supabase.rpc('recalcular_racha')

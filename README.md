@@ -38,16 +38,39 @@ pero con identidad propia en azul/negro/blanco.
 
 ## Gamificacion
 
-Todas las acciones (completar un habito, registrar un set de entrenamiento, terminar una tarea,
-completar una meta) suman XP mediante la funcion de Supabase `add_xp`, que recalcula el nivel
-del usuario de forma atomica. La tabla de XP y los rangos (Novato → Leyenda) estan en
-`lib/gamification.ts`.
+TrackLife trata la vida real como un videojuego: **cada accion en cada modulo otorga XP**.
+
+| Accion | XP | Etiqueta |
+|---|---|---|
+| Completar un habito | segun el habito (config. al crearlo) | Disciplina |
+| Registrar una transaccion (Finanzas) | 10 | Riqueza |
+| Registrar una comida (Dieta) | 10 | Nutricion |
+| Registrar un set de entrenamiento | 40 | Fuerza |
+| Completar una tarea | segun la tarea (config. al crearla) | Enfoque |
+| Completar una meta | 1000 | Vision |
+| Racha de habitos: cada 7 dias seguidos | 500 (bono automatico) | Racha |
+
+El XP se otorga via la funcion de Supabase `add_xp` (SECURITY DEFINER, recalcula el nivel de
+forma atomica) y el bono de racha se dispara solo desde `recalcular_racha()` — ver
+`supabase/migrations/004_racha_bonus.sql`. En el cliente, `lib/xp-client.ts` centraliza el
+otorgamiento: muestra el toast de "+XP" y, si el usuario sube de nivel (o de **rango**), lanza
+un segundo toast de celebracion.
+
+Los **niveles** siguen una curva triangular (el nivel N requiere N×200 XP acumulados desde el
+nivel N — cada nivel es mas caro que el anterior) y se agrupan en **rangos** cada vez mas dificiles
+de alcanzar, pensados para retar al usuario a largo plazo:
+
+`Novato → Aprendiz → Disciplinado → Guerrero → Cazador de Metas → Estratega → Elite → Campeon → Macho Alfa → Titan → Maestro → Leyenda → Inmortal`
+
+Todo esto vive en `lib/gamification.ts` (tabla de XP, rangos, formula de nivel) y
+`lib/xp-client.ts` (helper `otorgarXP` usado por todos los modulos).
 
 ## Puesta en marcha
 
 1. Crea un proyecto nuevo en [Supabase](https://supabase.com).
 2. En el SQL Editor de ese proyecto, ejecuta en orden el contenido de
-   `supabase/migrations/001_init.sql`, `002_onboarding_strava.sql` y `003_planes_pagos.sql`
+   `supabase/migrations/001_init.sql`, `002_onboarding_strava.sql`, `003_planes_pagos.sql`
+   y `004_racha_bonus.sql`
    (crea todas las tablas, RLS y funciones necesarias).
 3. Copia `.env.local.example` a `.env.local` y completa con los datos de tu proyecto
    (Settings → API en el dashboard de Supabase):

@@ -1,12 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Plus, X, Check, Loader2, Pencil, Trash2, Flame } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { DIAS_SEMANA, lastNDates } from '@/lib/utils'
 import { puedeCrear, MENSAJE_LIMITE } from '@/lib/planes'
+import { otorgarXP } from '@/lib/xp-client'
 import type { Habito, Perfil } from '@/lib/types'
 
 type Registro = { habito_id: string; fecha: string }
@@ -31,6 +33,7 @@ export default function HabitosView({
   usuarioId: string
 }) {
   const supabase = createClient()
+  const router = useRouter()
   const [habitos, setHabitos] = useState(habitosIniciales)
   const [registros, setRegistros] = useState(registrosIniciales)
   const [modalAbierto, setModalAbierto] = useState(false)
@@ -141,7 +144,7 @@ export default function HabitosView({
 
     if (hecho) {
       await supabase.from('habito_registros').delete().eq('habito_id', h.id).eq('fecha', fecha)
-      await supabase.rpc('add_xp', { p_xp: -h.xp_valor, p_tipo: 'habito_revertido' })
+      await otorgarXP(supabase, perfil, { p_xp: -h.xp_valor, p_tipo: 'habito_revertido' })
       setRegistros((prev) => prev.filter((r) => !(r.habito_id === h.id && r.fecha === fecha)))
     } else {
       const { error } = await supabase.from('habito_registros').insert({
@@ -154,12 +157,12 @@ export default function HabitosView({
         setPendiente(null)
         return
       }
-      await supabase.rpc('add_xp', { p_xp: h.xp_valor, p_tipo: 'habito', p_descripcion: h.nombre })
+      await otorgarXP(supabase, perfil, { p_xp: h.xp_valor, p_tipo: 'habito', p_descripcion: h.nombre })
       setRegistros((prev) => [...prev, { habito_id: h.id, fecha }])
-      toast.success(`+${h.xp_valor} XP`)
     }
     await supabase.rpc('recalcular_racha')
     setPendiente(null)
+    router.refresh()
   }
 
   function intensidad(fecha: string) {

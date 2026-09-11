@@ -115,6 +115,7 @@ export default async function DashboardPage() {
             <HabitosHoyWidget
               habitos={(habitos as Habito[]) ?? []}
               completadosHoy={(registrosHoy ?? []).map((r) => r.habito_id)}
+              perfil={perfil as Perfil}
             />
           </div>
 

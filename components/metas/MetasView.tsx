@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Plus, X, Check, Loader2, Archive, Trash2, Image as ImageIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { formatMoney } from '@/lib/utils'
 import { puedeCrear, MENSAJE_LIMITE } from '@/lib/planes'
+import { otorgarXP } from '@/lib/xp-client'
 import type { Meta, Perfil, TipoMeta } from '@/lib/types'
 import { XP_TABLE } from '@/lib/gamification'
 
@@ -20,6 +22,7 @@ export default function MetasView({
   perfil: Perfil
 }) {
   const supabase = createClient()
+  const router = useRouter()
   const [metas, setMetas] = useState(metasIniciales)
   const [tab, setTab] = useState<'activas' | 'archivadas'>('activas')
   const [modalAbierto, setModalAbierto] = useState(false)
@@ -98,8 +101,8 @@ export default function MetasView({
     await supabase.from('metas_aportes').insert({ meta_id: modalAporte.id, usuario_id: usuarioId, monto })
 
     if (!yaCompletada && nuevoMonto >= modalAporte.monto_objetivo && modalAporte.monto_objetivo > 0) {
-      await supabase.rpc('add_xp', { p_xp: XP_TABLE.meta_completa, p_tipo: 'meta_completa', p_descripcion: modalAporte.titulo })
-      toast.success(`Meta completada! +${XP_TABLE.meta_completa} XP`)
+      toast.success(`🏆 Meta "${modalAporte.titulo}" completada!`)
+      await otorgarXP(supabase, perfil, { p_xp: XP_TABLE.meta_completa, p_tipo: 'meta_completa', p_descripcion: modalAporte.titulo })
     } else {
       toast.success('Aporte registrado')
     }
@@ -108,6 +111,7 @@ export default function MetasView({
     setGuardando(false)
     setModalAporte(null)
     setMontoAporte('')
+    router.refresh()
   }
 
   async function archivar(m: Meta) {

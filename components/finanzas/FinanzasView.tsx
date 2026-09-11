@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Plus, X, Check, Loader2, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import {
@@ -17,7 +18,9 @@ import {
 } from 'recharts'
 import { createClient } from '@/lib/supabase/client'
 import { formatMoney, lastNDates } from '@/lib/utils'
-import { CATEGORIAS_GASTO, CATEGORIAS_INGRESO, type FinanzaTransaccion, type TipoTransaccion } from '@/lib/types'
+import { CATEGORIAS_GASTO, CATEGORIAS_INGRESO, type FinanzaTransaccion, type Perfil, type TipoTransaccion } from '@/lib/types'
+import { XP_TABLE } from '@/lib/gamification'
+import { otorgarXP } from '@/lib/xp-client'
 
 const COLORES_CATEGORIA = ['#2f6bff', '#60a5fa', '#93c5fd', '#f59e0b', '#94a3b8', '#38bdf8', '#a78bfa']
 
@@ -53,11 +56,14 @@ function CustomTooltip({
 export default function FinanzasView({
   transaccionesIniciales,
   usuarioId,
+  perfil,
 }: {
   transaccionesIniciales: FinanzaTransaccion[]
   usuarioId: string
+  perfil: Perfil
 }) {
   const supabase = createClient()
+  const router = useRouter()
   const [transacciones, setTransacciones] = useState(transaccionesIniciales)
   const [modalAbierto, setModalAbierto] = useState(false)
   const [guardando, setGuardando] = useState(false)
@@ -126,9 +132,10 @@ export default function FinanzasView({
       return
     }
     setTransacciones((prev) => [data as FinanzaTransaccion, ...prev])
-    toast.success('Transaccion registrada')
+    await otorgarXP(supabase, perfil, { p_xp: XP_TABLE.finanzas, p_tipo: 'finanzas', p_descripcion: descripcion || categoria })
     setGuardando(false)
     setModalAbierto(false)
+    router.refresh()
   }
 
   async function eliminar(id: string) {

@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, X, Check, Loader2, Trash2, ArrowRight, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { puedeCrear, MENSAJE_LIMITE } from '@/lib/planes'
+import { otorgarXP } from '@/lib/xp-client'
 import type { EstadoTarea, Perfil, Tarea, TareaSubtarea } from '@/lib/types'
 
 const COLUMNAS: { estado: EstadoTarea; label: string }[] = [
@@ -47,6 +49,7 @@ export default function TareasView({
   perfil: Perfil
 }) {
   const supabase = createClient()
+  const router = useRouter()
   const [tareas, setTareas] = useState(tareasIniciales)
   const [subtareas, setSubtareas] = useState(subtareasIniciales)
   const [modalAbierto, setModalAbierto] = useState(false)
@@ -101,8 +104,8 @@ export default function TareasView({
     }
     setTareas((prev) => prev.map((x) => (x.id === t.id ? { ...x, estado: nuevoEstado } : x)))
     if (nuevoEstado === 'hecho' && t.estado !== 'hecho') {
-      await supabase.rpc('add_xp', { p_xp: t.xp_valor, p_tipo: 'tarea', p_descripcion: t.titulo })
-      toast.success(`+${t.xp_valor} XP`)
+      await otorgarXP(supabase, perfil, { p_xp: t.xp_valor, p_tipo: 'tarea', p_descripcion: t.titulo })
+      router.refresh()
     }
   }
 
