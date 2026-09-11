@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Plus, X, Check, Loader2, Trash2, ArrowRight, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
-import type { EstadoTarea, Tarea, TareaSubtarea } from '@/lib/types'
+import { puedeCrear, MENSAJE_LIMITE } from '@/lib/planes'
+import type { EstadoTarea, Perfil, Tarea, TareaSubtarea } from '@/lib/types'
 
 const COLUMNAS: { estado: EstadoTarea; label: string }[] = [
   { estado: 'pendiente', label: 'Pendiente' },
@@ -37,10 +39,12 @@ export default function TareasView({
   tareasIniciales,
   subtareasIniciales,
   usuarioId,
+  perfil,
 }: {
   tareasIniciales: Tarea[]
   subtareasIniciales: TareaSubtarea[]
   usuarioId: string
+  perfil: Perfil
 }) {
   const supabase = createClient()
   const [tareas, setTareas] = useState(tareasIniciales)
@@ -66,6 +70,10 @@ export default function TareasView({
   async function crear() {
     if (!titulo.trim()) {
       toast.error('Ponle un titulo a la tarea')
+      return
+    }
+    if (!puedeCrear(perfil, 'tareas', tareas.length)) {
+      toast.error(MENSAJE_LIMITE.tareas)
       return
     }
     setGuardando(true)
@@ -147,6 +155,19 @@ export default function TareasView({
           <Plus size={14} /> Nueva tarea
         </button>
       </div>
+
+      {!puedeCrear(perfil, 'tareas', tareas.length) && (
+        <div className="px-6 pt-4">
+          <Link
+            href="/precio"
+            className="flex items-center justify-between text-xs px-3 py-2 rounded-lg border hover:underline"
+            style={{ borderColor: 'var(--tl-blue)', background: 'var(--tl-blue-dim)', color: 'var(--tl-blue)' }}
+          >
+            <span>{MENSAJE_LIMITE.tareas}</span>
+            <span className="shrink-0 ml-2">Mejorar →</span>
+          </Link>
+        </div>
+      )}
 
       <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
         {COLUMNAS.map((col) => {

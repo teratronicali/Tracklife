@@ -12,13 +12,15 @@ import {
   Trophy,
   Gift,
   LogOut,
-  Zap,
   Flame,
   Settings,
+  Crown,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn, formatNumber } from '@/lib/utils'
 import { calcularNivelInfo, getRango } from '@/lib/gamification'
+import { esVitalicio } from '@/lib/planes'
+import { LogoMark, Wordmark } from '@/components/Logo'
 import type { Perfil } from '@/lib/types'
 
 const NAV = [
@@ -30,6 +32,7 @@ const NAV = [
   { href: '/tareas', label: 'Tareas', icon: KanbanSquare },
   { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   { href: '/recompensas', label: 'Recompensas', icon: Gift },
+  { href: '/precio', label: 'Precio', icon: Crown },
   { href: '/ajustes', label: 'Ajustes', icon: Settings },
 ]
 
@@ -49,13 +52,8 @@ export default function Sidebar({ perfil }: { perfil: Perfil }) {
     <aside className="w-60 shrink-0 border-r border-border bg-surface flex flex-col h-screen sticky top-0">
       <div className="brand-stripe" />
       <div className="px-4 py-4 flex items-center gap-2 border-b border-border">
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ background: 'var(--tl-blue-dim)' }}
-        >
-          <Zap size={16} style={{ color: 'var(--tl-blue)' }} />
-        </div>
-        <span className="font-semibold text-sm">TrackLife</span>
+        <LogoMark size={30} />
+        <Wordmark className="font-semibold text-sm" />
       </div>
 
       <div className="px-4 py-4 border-b border-border">
@@ -78,6 +76,19 @@ export default function Sidebar({ perfil }: { perfil: Perfil }) {
             <Flame size={12} /> {perfil.racha_actual}
           </span>
         </div>
+        {esVitalicio(perfil) ? (
+          <div className="flex items-center gap-1 mt-2 text-[11px]" style={{ color: 'var(--tl-blue)' }}>
+            <Crown size={12} /> Acceso Vitalicio
+          </div>
+        ) : (
+          <Link
+            href="/precio"
+            className="flex items-center gap-1 mt-2 text-[11px] hover:underline"
+            style={{ color: 'var(--tl-blue)' }}
+          >
+            <Crown size={12} /> Mejorar a Vitalicio
+          </Link>
+        )}
       </div>
 
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">

@@ -10,6 +10,18 @@ export interface Perfil {
   deportes: string[]
   enfoque_financiero: string[]
   presupuesto_mensual: number | null
+  plan: 'gratis' | 'vitalicio'
+  plan_actualizado_en: string | null
+  created_at: string
+}
+
+export interface Compra {
+  id: string
+  usuario_id: string
+  stripe_session_id: string | null
+  monto: number
+  moneda: string
+  estado: string
   created_at: string
 }
 

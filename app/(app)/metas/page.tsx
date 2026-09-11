@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createServerSupabase } from '@/lib/supabase/server'
 import MetasView from '@/components/metas/MetasView'
-import type { Meta } from '@/lib/types'
+import type { Meta, Perfil } from '@/lib/types'
 
 export default async function MetasPage() {
   const supabase = createServerSupabase()
@@ -10,11 +10,10 @@ export default async function MetasPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: metas } = await supabase
-    .from('metas')
-    .select('*')
-    .eq('usuario_id', user.id)
-    .order('created_at', { ascending: false })
+  const [{ data: metas }, { data: perfil }] = await Promise.all([
+    supabase.from('metas').select('*').eq('usuario_id', user.id).order('created_at', { ascending: false }),
+    supabase.from('perfiles').select('*').eq('id', user.id).single<Perfil>(),
+  ])
 
-  return <MetasView metasIniciales={(metas as Meta[]) ?? []} usuarioId={user.id} />
+  return <MetasView metasIniciales={(metas as Meta[]) ?? []} usuarioId={user.id} perfil={perfil as Perfil} />
 }

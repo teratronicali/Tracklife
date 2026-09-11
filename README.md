@@ -17,6 +17,8 @@ pero con identidad propia en azul/negro/blanco.
 
 ## Modulos
 
+- **Landing page** (`/`) — pagina publica de marketing: features, precio y FAQ. Accesible sin
+  iniciar sesion; si ya tienes cuenta, te redirige directo al dashboard.
 - **Dashboard** — resumen de XP, nivel, racha y accesos rapidos a cada modulo.
 - **Habitos** — checklist diario, cuadricula semanal, heatmap de 84 dias, rachas.
 - **Finanzas** — ingresos/gastos, evolucion de saldo, gastos por categoria.
@@ -31,6 +33,8 @@ pero con identidad propia en azul/negro/blanco.
   una primera meta opcional. Se puede volver a hacer desde **Ajustes**.
 - **Ajustes** — resumen de personalizacion + integracion con **Strava** (importa entrenamientos
   automaticamente: running, ciclismo, natacion, etc.).
+- **Precio / Plan** — plan gratis con limites (3 habitos, 2 metas, 5 tareas) y **Acceso Vitalicio**
+  (pago unico via Stripe) que los quita para siempre. Los limites se aplican al crear cada recurso.
 
 ## Gamificacion
 
@@ -43,7 +47,7 @@ del usuario de forma atomica. La tabla de XP y los rangos (Novato → Leyenda) e
 
 1. Crea un proyecto nuevo en [Supabase](https://supabase.com).
 2. En el SQL Editor de ese proyecto, ejecuta en orden el contenido de
-   `supabase/migrations/001_init.sql` y luego `002_onboarding_strava.sql`
+   `supabase/migrations/001_init.sql`, `002_onboarding_strava.sql` y `003_planes_pagos.sql`
    (crea todas las tablas, RLS y funciones necesarias).
 3. Copia `.env.local.example` a `.env.local` y completa con los datos de tu proyecto
    (Settings → API en el dashboard de Supabase):
@@ -79,19 +83,46 @@ del usuario de forma atomica. La tabla de XP y los rangos (Novato → Leyenda) e
    ```
 3. Reinicia el servidor. En **Ajustes** aparecera el boton "Conectar con Strava".
 
+### Activar cobros con Stripe (opcional)
+
+El precio del Acceso Vitalicio esta en `lib/planes.ts` (`PRECIO.unit_amount`, en centavos —
+ajustalo a lo que quieras cobrar) y `PRECIO.display` (el texto que se muestra en la UI).
+
+1. Crea una cuenta en <https://dashboard.stripe.com> y copia tu **Secret key** (Developers → API keys).
+2. Crea un webhook (Developers → Webhooks → Add endpoint) apuntando a
+   `https://TU_DOMINIO/api/stripe/webhook`, escuchando el evento `checkout.session.completed`,
+   y copia su **Signing secret**.
+3. En Supabase, ve a Settings → API y copia la key **service_role** (secreta, nunca la publiques).
+4. Agrega las tres a tu `.env.local`:
+   ```
+   STRIPE_SECRET_KEY=...
+   STRIPE_WEBHOOK_SECRET=...
+   SUPABASE_SERVICE_ROLE_KEY=...
+   ```
+5. Reinicia el servidor. El boton "Comprar Acceso Vitalicio" en `/precio` ya podra procesar pagos
+   reales; el webhook activa `plan = 'vitalicio'` en el perfil del usuario automaticamente.
+
+En desarrollo local, Stripe no puede llegarte el webhook directamente — usa
+[`stripe listen --forward-to localhost:3000/api/stripe/webhook`](https://docs.stripe.com/stripe-cli)
+con el Stripe CLI para probarlo.
+
 ## Estructura
 
 ```
 app/
-  (app)/             rutas autenticadas (sidebar + modulos)
-  api/strava/         OAuth + sincronizacion de actividades
+  page.tsx             landing publica
+  (app)/               rutas autenticadas (sidebar + modulos, incluye /precio)
+  api/strava/          OAuth + sincronizacion de actividades
+  api/stripe/          checkout + webhook de pagos
   login, signup, onboarding   auth y personalizacion inicial
-components/           vistas por modulo (client components)
+components/            vistas por modulo (client components)
 lib/
-  supabase/           clientes de Supabase (browser/server)
-  gamification.ts     XP, niveles y rangos
+  supabase/            clientes de Supabase (browser/server/admin)
+  gamification.ts      XP, niveles y rangos
   onboarding.ts        habitos/deportes sugeridos, mapeo de tipos de Strava
   strava.ts            helpers de OAuth y fetch de actividades
-  types.ts             tipos compartidos
-supabase/migrations/  esquema SQL
+  planes.ts             precio, limites del plan gratis
+  stripe.ts             cliente de Stripe
+  types.ts              tipos compartidos
+supabase/migrations/   esquema SQL
 ```

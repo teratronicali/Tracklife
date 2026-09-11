@@ -3,8 +3,10 @@
 import { useMemo, useState } from 'react'
 import { Plus, X, Check, Loader2, Pencil, Trash2, Flame } from 'lucide-react'
 import toast from 'react-hot-toast'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { DIAS_SEMANA, lastNDates } from '@/lib/utils'
+import { puedeCrear, MENSAJE_LIMITE } from '@/lib/planes'
 import type { Habito, Perfil } from '@/lib/types'
 
 type Registro = { habito_id: string; fecha: string }
@@ -81,6 +83,10 @@ export default function HabitosView({
   async function guardar() {
     if (!nombre.trim()) {
       toast.error('Ponle un nombre al habito')
+      return
+    }
+    if (!modoEditar && !puedeCrear(perfil, 'habitos', habitos.length)) {
+      toast.error(MENSAJE_LIMITE.habitos)
       return
     }
     setGuardando(true)
@@ -178,6 +184,19 @@ export default function HabitosView({
           <Plus size={14} /> Nuevo habito
         </button>
       </div>
+
+      {!puedeCrear(perfil, 'habitos', habitos.length) && (
+        <div className="px-6 pt-4">
+          <Link
+            href="/precio"
+            className="flex items-center justify-between text-xs px-3 py-2 rounded-lg border hover:underline"
+            style={{ borderColor: 'var(--tl-blue)', background: 'var(--tl-blue-dim)', color: 'var(--tl-blue)' }}
+          >
+            <span>{MENSAJE_LIMITE.habitos}</span>
+            <span className="shrink-0 ml-2">Mejorar →</span>
+          </Link>
+        </div>
+      )}
 
       <div className="p-5 space-y-5">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Loader2, Zap } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
+import { LogoMark, Wordmark } from '@/components/Logo'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -37,13 +38,12 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-            style={{ background: 'var(--tl-blue-dim)' }}
-          >
-            <Zap size={22} style={{ color: 'var(--tl-blue)' }} />
+          <div className="mb-3">
+            <LogoMark size={48} />
           </div>
-          <h1 className="text-lg font-semibold">TrackLife</h1>
+          <h1 className="text-lg font-semibold">
+            <Wordmark />
+          </h1>
           <p className="text-xs text-muted mt-1">Crea tu cuenta y empieza a subir de nivel</p>
         </div>
 

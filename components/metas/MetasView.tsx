@@ -3,12 +3,22 @@
 import { useState } from 'react'
 import { Plus, X, Check, Loader2, Archive, Trash2, Image as ImageIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { formatMoney } from '@/lib/utils'
-import type { Meta, TipoMeta } from '@/lib/types'
+import { puedeCrear, MENSAJE_LIMITE } from '@/lib/planes'
+import type { Meta, Perfil, TipoMeta } from '@/lib/types'
 import { XP_TABLE } from '@/lib/gamification'
 
-export default function MetasView({ metasIniciales, usuarioId }: { metasIniciales: Meta[]; usuarioId: string }) {
+export default function MetasView({
+  metasIniciales,
+  usuarioId,
+  perfil,
+}: {
+  metasIniciales: Meta[]
+  usuarioId: string
+  perfil: Perfil
+}) {
   const supabase = createClient()
   const [metas, setMetas] = useState(metasIniciales)
   const [tab, setTab] = useState<'activas' | 'archivadas'>('activas')
@@ -34,9 +44,15 @@ export default function MetasView({ metasIniciales, usuarioId }: { metasIniciale
     setModalAbierto(true)
   }
 
+  const metasActivas = metas.filter((m) => !m.archivada).length
+
   async function crear() {
     if (!titulo.trim()) {
       toast.error('Ponle un titulo a la meta')
+      return
+    }
+    if (!puedeCrear(perfil, 'metas', metasActivas)) {
+      toast.error(MENSAJE_LIMITE.metas)
       return
     }
     setGuardando(true)
@@ -124,6 +140,19 @@ export default function MetasView({ metasIniciales, usuarioId }: { metasIniciale
           <Plus size={14} /> Nueva meta
         </button>
       </div>
+
+      {!puedeCrear(perfil, 'metas', metasActivas) && (
+        <div className="px-6 pt-4">
+          <Link
+            href="/precio"
+            className="flex items-center justify-between text-xs px-3 py-2 rounded-lg border hover:underline"
+            style={{ borderColor: 'var(--tl-blue)', background: 'var(--tl-blue-dim)', color: 'var(--tl-blue)' }}
+          >
+            <span>{MENSAJE_LIMITE.metas}</span>
+            <span className="shrink-0 ml-2">Mejorar →</span>
+          </Link>
+        </div>
+      )}
 
       <div className="px-6 pt-4">
         <div className="inline-flex rounded-full border border-border p-0.5">
