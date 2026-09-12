@@ -98,8 +98,10 @@ export default function OnboardingWizard({ perfil, usuarioId }: { perfil: Perfil
       toast.success('Todo listo. A subir de nivel!')
       router.push('/dashboard')
       router.refresh()
-    } catch {
-      toast.error('Algo fallo guardando tus respuestas, intenta de nuevo')
+    } catch (err) {
+      const mensaje = err && typeof err === 'object' && 'message' in err ? String((err as { message: unknown }).message) : ''
+      console.error('Error guardando onboarding:', err)
+      toast.error(mensaje ? `No se pudo guardar: ${mensaje}` : 'Algo fallo guardando tus respuestas, intenta de nuevo')
       setEnviando(false)
     }
   }
