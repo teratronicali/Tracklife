@@ -115,6 +115,43 @@ export interface EntrenamientoRegistro {
   distancia_km: number | null
   duracion_min: number | null
   tipo_actividad: string
+  sesion_id: string | null
+  rir: number | null
+  numero_serie: number
+}
+
+export interface Rutina {
+  id: string
+  usuario_id: string
+  nombre: string
+  created_at: string
+}
+
+export interface RutinaEjercicio {
+  id: string
+  usuario_id: string
+  rutina_id: string
+  ejercicio_id: string
+  orden: number
+  series_objetivo: number
+  reps_objetivo: string
+  peso_objetivo: number | null
+  descanso_seg: number
+  ejercicio?: Ejercicio
+}
+
+export interface RutinaConEjercicios extends Rutina {
+  ejercicios: RutinaEjercicio[]
+}
+
+export interface SesionEntrenamiento {
+  id: string
+  usuario_id: string
+  rutina_id: string | null
+  nombre: string
+  fecha: string
+  iniciada_en: string
+  finalizada_en: string | null
 }
 
 export interface IntegracionStrava {

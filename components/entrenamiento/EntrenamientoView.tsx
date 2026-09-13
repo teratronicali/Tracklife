@@ -14,9 +14,11 @@ import {
   type NutricionComida,
   type NutricionMeta,
   type Perfil,
+  type RutinaConEjercicios,
 } from '@/lib/types'
 import { XP_TABLE } from '@/lib/gamification'
 import { otorgarXP } from '@/lib/xp-client'
+import RutinasView from './RutinasView'
 
 const COLORES = ['#2f6bff', '#60a5fa', '#93c5fd', '#f59e0b', '#94a3b8', '#38bdf8', '#a78bfa', '#34d399']
 
@@ -54,6 +56,7 @@ export default function EntrenamientoView({
   registrosIniciales,
   comidasIniciales,
   metaNutricionInicial,
+  rutinasIniciales,
   usuarioId,
   perfil,
 }: {
@@ -61,6 +64,7 @@ export default function EntrenamientoView({
   registrosIniciales: EntrenamientoRegistro[]
   comidasIniciales: NutricionComida[]
   metaNutricionInicial: NutricionMeta | null
+  rutinasIniciales: RutinaConEjercicios[]
   usuarioId: string
   perfil: Perfil
 }) {
@@ -314,6 +318,8 @@ export default function EntrenamientoView({
 
       {tab === 'entrenamiento' ? (
         <div className="p-5 space-y-5">
+          <RutinasView rutinasIniciales={rutinasIniciales} ejercicios={ejercicios} usuarioId={usuarioId} perfil={perfil} />
+
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="card px-4 py-3">
               <p className="text-[11px] text-muted mb-1">Volumen semanal</p>
