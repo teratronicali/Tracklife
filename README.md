@@ -22,8 +22,11 @@ pero con identidad propia en azul/negro/blanco.
 - **Dashboard** — resumen de XP, nivel, racha y accesos rapidos a cada modulo.
 - **Habitos** — checklist diario, cuadricula semanal, heatmap de 84 dias, rachas.
 - **Finanzas** — ingresos/gastos, evolucion de saldo, gastos por categoria.
-- **Entrenamiento** — registro de series por ejercicio, volumen semanal, distribucion por
-  grupo muscular, y una pestana de **Dieta** con macros (proteina/carbo/grasa) y kcal.
+- **Entrenamiento** — arma **rutinas** (ejercicios + series/reps/peso/descanso objetivo) e
+  iniciala para una **sesion interactiva**: vas marcando cada serie (peso, reps, RIR) con
+  timer de descanso automatico, navegacion entre ejercicios y opcion de swap — parecido a
+  apps como Symmetry/Hevy. Tambien registro rapido de series sueltas, volumen semanal,
+  distribucion por grupo muscular, y una pestana de **Dieta** con macros (proteina/carbo/grasa) y kcal.
 - **Metas** — metas financieras o personales con imagen, aportes y barra de progreso.
 - **Tareas** — kanban (Pendiente / En progreso / Hecho) con etiquetas y subtareas.
 - **Leaderboard** — ranking global por XP con podio top 3.
@@ -69,8 +72,8 @@ Todo esto vive en `lib/gamification.ts` (tabla de XP, rangos, formula de nivel) 
 
 1. Crea un proyecto nuevo en [Supabase](https://supabase.com).
 2. En el SQL Editor de ese proyecto, ejecuta en orden el contenido de
-   `supabase/migrations/001_init.sql`, `002_onboarding_strava.sql`, `003_planes_pagos.sql`
-   y `004_racha_bonus.sql`
+   `supabase/migrations/001_init.sql`, `002_onboarding_strava.sql`, `003_planes_pagos.sql`,
+   `004_racha_bonus.sql` y `005_rutinas_sesiones.sql`
    (crea todas las tablas, RLS y funciones necesarias).
 3. Copia `.env.local.example` a `.env.local` y completa con los datos de tu proyecto
    (Settings → API en el dashboard de Supabase):
