@@ -8,6 +8,7 @@ import type {
   NutricionComida,
   NutricionMeta,
   Perfil,
+  PlanConDias,
   RutinaConEjercicios,
 } from '@/lib/types'
 
@@ -21,7 +22,7 @@ export default async function EntrenamientoPage() {
   const desde14 = lastNDates(14)[0]
   const desde7 = lastNDates(7)[0]
 
-  const [{ data: ejercicios }, { data: registros }, { data: comidas }, { data: metaNutricion }, { data: perfil }, { data: rutinas }] =
+  const [{ data: ejercicios }, { data: registros }, { data: comidas }, { data: metaNutricion }, { data: perfil }, { data: rutinas }, { data: plan }] =
     await Promise.all([
       supabase.from('ejercicios').select('*').eq('usuario_id', user.id).order('nombre'),
       supabase
@@ -38,12 +39,20 @@ export default async function EntrenamientoPage() {
         .select('*, ejercicios:rutina_ejercicios(*, ejercicio:ejercicios(*))')
         .eq('usuario_id', user.id)
         .order('created_at', { ascending: false }),
+      supabase
+        .from('planes_entrenamiento')
+        .select('*, dias:plan_dias(*, rutina:rutinas(*, ejercicios:rutina_ejercicios(*, ejercicio:ejercicios(*))))')
+        .eq('usuario_id', user.id)
+        .eq('activo', true)
+        .maybeSingle<PlanConDias>(),
     ])
 
   const rutinasOrdenadas = ((rutinas as RutinaConEjercicios[]) ?? []).map((r) => ({
     ...r,
     ejercicios: [...r.ejercicios].sort((a, b) => a.orden - b.orden),
   }))
+
+  const planOrdenado = plan ? { ...plan, dias: [...plan.dias].sort((a, b) => a.dia_semana - b.dia_semana) } : null
 
   return (
     <EntrenamientoView
@@ -52,6 +61,7 @@ export default async function EntrenamientoPage() {
       comidasIniciales={(comidas as NutricionComida[]) ?? []}
       metaNutricionInicial={metaNutricion ?? null}
       rutinasIniciales={rutinasOrdenadas}
+      planInicial={planOrdenado}
       usuarioId={user.id}
       perfil={perfil as Perfil}
     />

@@ -120,10 +120,16 @@ export interface EntrenamientoRegistro {
   numero_serie: number
 }
 
+export type TipoRutina = 'gym' | 'cardio'
+export type NivelEntrenamiento = 'principiante' | 'intermedio' | 'experto'
+
 export interface Rutina {
   id: string
   usuario_id: string
   nombre: string
+  tipo: TipoRutina
+  objetivo: string | null
+  nivel: NivelEntrenamiento | null
   created_at: string
 }
 
@@ -137,6 +143,10 @@ export interface RutinaEjercicio {
   reps_objetivo: string
   peso_objetivo: number | null
   descanso_seg: number
+  tipo_actividad: string | null
+  distancia_objetivo_km: number | null
+  duracion_objetivo_min: number | null
+  notas_cardio: string | null
   ejercicio?: Ejercicio
 }
 
@@ -152,6 +162,30 @@ export interface SesionEntrenamiento {
   fecha: string
   iniciada_en: string
   finalizada_en: string | null
+}
+
+export interface PlanEntrenamiento {
+  id: string
+  usuario_id: string
+  nombre: string
+  objetivo: string
+  nivel: NivelEntrenamiento
+  activo: boolean
+  created_at: string
+}
+
+export interface PlanDia {
+  id: string
+  usuario_id: string
+  plan_id: string
+  dia_semana: number
+  rutina_id: string | null
+  descanso: boolean
+  rutina?: RutinaConEjercicios
+}
+
+export interface PlanConDias extends PlanEntrenamiento {
+  dias: PlanDia[]
 }
 
 export interface IntegracionStrava {

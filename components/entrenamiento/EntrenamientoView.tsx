@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, X, Check, Loader2, Trash2, Dumbbell, Utensils } from 'lucide-react'
+import { Plus, X, Check, Loader2, Trash2, Calendar, Dumbbell, Utensils } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts'
 import { createClient } from '@/lib/supabase/client'
@@ -14,11 +14,13 @@ import {
   type NutricionComida,
   type NutricionMeta,
   type Perfil,
+  type PlanConDias,
   type RutinaConEjercicios,
 } from '@/lib/types'
 import { XP_TABLE } from '@/lib/gamification'
 import { otorgarXP } from '@/lib/xp-client'
 import RutinasView from './RutinasView'
+import PlanEntrenamientoView from './PlanEntrenamientoView'
 
 const COLORES = ['#2f6bff', '#60a5fa', '#93c5fd', '#f59e0b', '#94a3b8', '#38bdf8', '#a78bfa', '#34d399']
 
@@ -57,6 +59,7 @@ export default function EntrenamientoView({
   comidasIniciales,
   metaNutricionInicial,
   rutinasIniciales,
+  planInicial,
   usuarioId,
   perfil,
 }: {
@@ -65,16 +68,21 @@ export default function EntrenamientoView({
   comidasIniciales: NutricionComida[]
   metaNutricionInicial: NutricionMeta | null
   rutinasIniciales: RutinaConEjercicios[]
+  planInicial: PlanConDias | null
   usuarioId: string
   perfil: Perfil
 }) {
   const supabase = createClient()
   const router = useRouter()
-  const [tab, setTab] = useState<'entrenamiento' | 'dieta'>('entrenamiento')
+  const [tab, setTab] = useState<'plan' | 'entrenamiento' | 'dieta'>('plan')
 
   const [ejercicios, setEjercicios] = useState(ejerciciosIniciales)
+  const [rutinas, setRutinas] = useState(rutinasIniciales)
   const [registros, setRegistros] = useState(registrosIniciales)
   const [comidas, setComidas] = useState(comidasIniciales)
+
+  useEffect(() => setEjercicios(ejerciciosIniciales), [ejerciciosIniciales])
+  useEffect(() => setRutinas(rutinasIniciales), [rutinasIniciales])
   const [metaNutricion, setMetaNutricion] = useState(
     metaNutricionInicial ?? {
       usuario_id: usuarioId,
@@ -286,11 +294,12 @@ export default function EntrenamientoView({
           <h1 className="text-base font-medium">Entrenamiento</h1>
           <p className="text-xs text-muted mt-0.5">Tu evolucion fisica, calculada en tiempo real</p>
         </div>
-        {tab === 'entrenamiento' ? (
+        {tab === 'entrenamiento' && (
           <button onClick={abrirModalSet} className="btn-tl-blue">
             <Plus size={14} /> Registrar serie
           </button>
-        ) : (
+        )}
+        {tab === 'dieta' && (
           <button onClick={() => setModalComida(true)} className="btn-tl-blue">
             <Plus size={14} /> Agregar comida
           </button>
@@ -299,6 +308,13 @@ export default function EntrenamientoView({
 
       <div className="px-6 pt-4">
         <div className="inline-flex rounded-full border border-border p-0.5">
+          <button
+            onClick={() => setTab('plan')}
+            className="px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5"
+            style={tab === 'plan' ? { background: 'var(--tl-blue)', color: 'white' } : { color: 'var(--tl-muted)' }}
+          >
+            <Calendar size={13} /> Plan
+          </button>
           <button
             onClick={() => setTab('entrenamiento')}
             className="px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5"
@@ -316,9 +332,22 @@ export default function EntrenamientoView({
         </div>
       </div>
 
-      {tab === 'entrenamiento' ? (
+      {tab === 'plan' && (
+        <div className="p-5">
+          <PlanEntrenamientoView
+            planInicial={planInicial}
+            rutinasDisponibles={rutinas}
+            setRutinasDisponibles={setRutinas}
+            ejercicios={ejercicios}
+            usuarioId={usuarioId}
+            perfil={perfil}
+          />
+        </div>
+      )}
+
+      {tab === 'entrenamiento' && (
         <div className="p-5 space-y-5">
-          <RutinasView rutinasIniciales={rutinasIniciales} ejercicios={ejercicios} usuarioId={usuarioId} perfil={perfil} />
+          <RutinasView rutinas={rutinas} setRutinas={setRutinas} ejercicios={ejercicios} usuarioId={usuarioId} perfil={perfil} />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="card px-4 py-3">
@@ -417,7 +446,9 @@ export default function EntrenamientoView({
             </table>
           </div>
         </div>
-      ) : (
+      )}
+
+      {tab === 'dieta' && (
         <div className="p-5 space-y-5">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="card px-4 py-3">
