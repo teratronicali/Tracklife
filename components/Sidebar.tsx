@@ -49,7 +49,7 @@ export default function Sidebar({ perfil }: { perfil: Perfil }) {
   }
 
   return (
-    <aside className="w-60 shrink-0 border-r border-border bg-surface flex flex-col h-screen sticky top-0">
+    <aside className="hidden md:flex w-60 shrink-0 border-r border-border bg-surface flex-col h-screen sticky top-0">
       <div className="brand-stripe" />
       <div className="px-4 py-4 flex items-center gap-2 border-b border-border">
         <LogoMark size={30} />
