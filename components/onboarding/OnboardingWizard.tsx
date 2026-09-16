@@ -1,14 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Zap, ArrowRight, ArrowLeft, Check, Loader2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
-import { HABITOS_SUGERIDOS, DEPORTES, ENFOQUES_FINANCIEROS, type HabitoSugerido } from '@/lib/onboarding'
+import { DEPORTES, ENFOQUES_FINANCIEROS, HABITOS_GENERALES, HABITOS_POR_DEPORTE, habitosSugeridosPara, type HabitoSugerido } from '@/lib/onboarding'
 import type { Perfil, TipoMeta } from '@/lib/types'
 
-const PASOS = ['Bienvenida', 'Habitos', 'Deporte', 'Finanzas', 'Meta', 'Listo']
+const PASOS = ['Bienvenida', 'Deporte', 'Habitos', 'Finanzas', 'Meta', 'Listo']
 
 export default function OnboardingWizard({ perfil, usuarioId }: { perfil: Perfil; usuarioId: string }) {
   const supabase = createClient()
@@ -17,7 +17,8 @@ export default function OnboardingWizard({ perfil, usuarioId }: { perfil: Perfil
   const [enviando, setEnviando] = useState(false)
 
   const [nombre, setNombre] = useState(perfil.nombre)
-  const [habitos, setHabitos] = useState<HabitoSugerido[]>([HABITOS_SUGERIDOS[0], HABITOS_SUGERIDOS[3]])
+  const [habitos, setHabitos] = useState<HabitoSugerido[]>([])
+  const [habitosInicializados, setHabitosInicializados] = useState(false)
   const [habitoCustom, setHabitoCustom] = useState('')
   const [deportes, setDeportes] = useState<string[]>([])
   const [enfoques, setEnfoques] = useState<string[]>([])
@@ -25,6 +26,18 @@ export default function OnboardingWizard({ perfil, usuarioId }: { perfil: Perfil
   const [metaTitulo, setMetaTitulo] = useState('')
   const [metaMonto, setMetaMonto] = useState('')
   const [metaTipo, setMetaTipo] = useState<TipoMeta>('personal')
+
+  const habitosDisponibles = useMemo(() => habitosSugeridosPara(deportes), [deportes])
+
+  // Preselecciona los habitos especificos de tu deporte + un par de generales
+  // basicos la primera vez que llegas al paso de Habitos (ya elegiste deporte).
+  useEffect(() => {
+    if (paso !== 2 || habitosInicializados) return
+    const especificos = deportes.flatMap((id) => HABITOS_POR_DEPORTE[id] ?? [])
+    const generalesBase = HABITOS_GENERALES.filter((h) => ['Beber 2L de agua', 'Dormir temprano'].includes(h.nombre))
+    setHabitos([...especificos, ...generalesBase])
+    setHabitosInicializados(true)
+  }, [paso, deportes, habitosInicializados])
 
   function toggleHabito(h: HabitoSugerido) {
     setHabitos((prev) => (prev.some((x) => x.nombre === h.nombre) ? prev.filter((x) => x.nombre !== h.nombre) : [...prev, h]))
@@ -46,64 +59,81 @@ export default function OnboardingWizard({ perfil, usuarioId }: { perfil: Perfil
 
   async function finalizar() {
     setEnviando(true)
-    try {
-      if (habitos.length > 0) {
-        const { error } = await supabase.from('habitos').insert(
-          habitos.map((h) => ({
-            usuario_id: usuarioId,
-            nombre: h.nombre,
-            emoji: h.emoji,
-            momento: h.momento,
-            xp_valor: h.xp_valor,
-          }))
-        )
-        if (error) throw error
-      }
 
-      const deportesSeleccionados = DEPORTES.filter((d) => deportes.includes(d.id))
-      const ejerciciosSemilla = deportesSeleccionados.flatMap((d) => d.ejercicios)
-      if (ejerciciosSemilla.length > 0) {
-        const { error } = await supabase.from('ejercicios').insert(
-          ejerciciosSemilla.map((e) => ({
-            usuario_id: usuarioId,
-            nombre: e.nombre,
-            grupo_muscular: e.grupo_muscular,
-          }))
-        )
-        if (error) throw error
-      }
+    // El perfil se guarda PRIMERO: si falla (ej. falta una migracion), no se
+    // crea nada mas y un reintento no deja habitos/ejercicios duplicados.
+    // Una vez el perfil queda bien, onboarding_completado ya es true y el
+    // usuario puede seguir aunque algun detalle menor falle abajo.
+    const { error: perfilError } = await supabase
+      .from('perfiles')
+      .update({
+        nombre: nombre.trim() || perfil.nombre,
+        deportes,
+        enfoque_financiero: enfoques,
+        presupuesto_mensual: presupuesto ? Number(presupuesto) : null,
+        onboarding_completado: true,
+      })
+      .eq('id', usuarioId)
 
-      if (metaTitulo.trim()) {
-        const { error } = await supabase.from('metas').insert({
-          usuario_id: usuarioId,
-          titulo: metaTitulo.trim(),
-          tipo: metaTipo,
-          monto_objetivo: Number(metaMonto) || 0,
-        })
-        if (error) throw error
-      }
-
-      const { error: perfilError } = await supabase
-        .from('perfiles')
-        .update({
-          nombre: nombre.trim() || perfil.nombre,
-          deportes,
-          enfoque_financiero: enfoques,
-          presupuesto_mensual: presupuesto ? Number(presupuesto) : null,
-          onboarding_completado: true,
-        })
-        .eq('id', usuarioId)
-      if (perfilError) throw perfilError
-
-      toast.success('Todo listo. A subir de nivel!')
-      router.push('/dashboard')
-      router.refresh()
-    } catch (err) {
-      const mensaje = err && typeof err === 'object' && 'message' in err ? String((err as { message: unknown }).message) : ''
-      console.error('Error guardando onboarding:', err)
-      toast.error(mensaje ? `No se pudo guardar: ${mensaje}` : 'Algo fallo guardando tus respuestas, intenta de nuevo')
+    if (perfilError) {
+      console.error('Error guardando onboarding (perfil):', perfilError)
+      toast.error(`No se pudo guardar: ${perfilError.message}`)
       setEnviando(false)
+      return
     }
+
+    let advertencias = 0
+
+    if (habitos.length > 0) {
+      const { error } = await supabase.from('habitos').insert(
+        habitos.map((h) => ({
+          usuario_id: usuarioId,
+          nombre: h.nombre,
+          emoji: h.emoji,
+          momento: h.momento,
+          xp_valor: h.xp_valor,
+        }))
+      )
+      if (error) {
+        console.error('Error creando habitos:', error)
+        advertencias++
+      }
+    }
+
+    const deportesSeleccionados = DEPORTES.filter((d) => deportes.includes(d.id))
+    const ejerciciosSemilla = deportesSeleccionados.flatMap((d) => d.ejercicios)
+    if (ejerciciosSemilla.length > 0) {
+      const { error } = await supabase.from('ejercicios').insert(
+        ejerciciosSemilla.map((e) => ({
+          usuario_id: usuarioId,
+          nombre: e.nombre,
+          grupo_muscular: e.grupo_muscular,
+        }))
+      )
+      if (error) {
+        console.error('Error creando ejercicios:', error)
+        advertencias++
+      }
+    }
+
+    if (metaTitulo.trim()) {
+      const { error } = await supabase.from('metas').insert({
+        usuario_id: usuarioId,
+        titulo: metaTitulo.trim(),
+        tipo: metaTipo,
+        monto_objetivo: Number(metaMonto) || 0,
+      })
+      if (error) {
+        console.error('Error creando meta:', error)
+        advertencias++
+      }
+    }
+
+    toast.success(
+      advertencias === 0 ? 'Todo listo. A subir de nivel!' : 'Perfil guardado. Algo no se creo del todo, puedes agregarlo manualmente.'
+    )
+    router.push('/dashboard')
+    router.refresh()
   }
 
   function siguiente() {
@@ -153,11 +183,46 @@ export default function OnboardingWizard({ perfil, usuarioId }: { perfil: Perfil
           {paso === 1 && (
             <div className="flex-1 flex flex-col gap-3">
               <div>
-                <h2 className="text-base font-medium">Que habitos quieres tomar?</h2>
-                <p className="text-xs text-muted mt-0.5">Elige los que quieras — puedes agregar mas despues.</p>
+                <h2 className="text-base font-medium">Que deporte practicas?</h2>
+                <p className="text-xs text-muted mt-0.5">
+                  Ajustamos Entrenamiento y tus habitos sugeridos segun lo que elijas.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {HABITOS_SUGERIDOS.map((h) => {
+                {DEPORTES.map((d) => {
+                  const activo = deportes.includes(d.id)
+                  return (
+                    <button
+                      key={d.id}
+                      onClick={() => toggleDeporte(d.id)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border text-left text-xs"
+                      style={{
+                        borderColor: activo ? 'var(--tl-blue)' : 'var(--tl-border)',
+                        background: activo ? 'var(--tl-blue-dim)' : 'transparent',
+                      }}
+                    >
+                      <span>{d.emoji}</span>
+                      <span className="flex-1">{d.label}</span>
+                      {activo && <Check size={13} style={{ color: 'var(--tl-blue)' }} />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {paso === 2 && (
+            <div className="flex-1 flex flex-col gap-3">
+              <div>
+                <h2 className="text-base font-medium">Que habitos quieres tomar?</h2>
+                <p className="text-xs text-muted mt-0.5">
+                  {deportes.length > 0
+                    ? 'Ya preseleccionamos algunos segun tu deporte — ajustalos a tu gusto.'
+                    : 'Elige los que quieras — puedes agregar mas despues.'}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {habitosDisponibles.map((h) => {
                   const activo = habitos.some((x) => x.nombre === h.nombre)
                   return (
                     <button
@@ -176,7 +241,7 @@ export default function OnboardingWizard({ perfil, usuarioId }: { perfil: Perfil
                   )
                 })}
                 {habitos
-                  .filter((h) => !HABITOS_SUGERIDOS.some((s) => s.nombre === h.nombre))
+                  .filter((h) => !habitosDisponibles.some((s) => s.nombre === h.nombre))
                   .map((h) => (
                     <button
                       key={h.nombre}
@@ -201,37 +266,6 @@ export default function OnboardingWizard({ perfil, usuarioId }: { perfil: Perfil
                 <button onClick={agregarHabitoCustom} className="btn-tl shrink-0">
                   <Plus size={14} />
                 </button>
-              </div>
-            </div>
-          )}
-
-          {paso === 2 && (
-            <div className="flex-1 flex flex-col gap-3">
-              <div>
-                <h2 className="text-base font-medium">Que deporte practicas?</h2>
-                <p className="text-xs text-muted mt-0.5">
-                  Ajustamos Entrenamiento con ejercicios y metricas segun lo que elijas.
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {DEPORTES.map((d) => {
-                  const activo = deportes.includes(d.id)
-                  return (
-                    <button
-                      key={d.id}
-                      onClick={() => toggleDeporte(d.id)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border text-left text-xs"
-                      style={{
-                        borderColor: activo ? 'var(--tl-blue)' : 'var(--tl-border)',
-                        background: activo ? 'var(--tl-blue-dim)' : 'transparent',
-                      }}
-                    >
-                      <span>{d.emoji}</span>
-                      <span className="flex-1">{d.label}</span>
-                      {activo && <Check size={13} style={{ color: 'var(--tl-blue)' }} />}
-                    </button>
-                  )
-                })}
               </div>
             </div>
           )}

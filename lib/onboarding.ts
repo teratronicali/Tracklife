@@ -7,18 +7,62 @@ export interface HabitoSugerido {
   xp_valor: number
 }
 
-export const HABITOS_SUGERIDOS: HabitoSugerido[] = [
-  { nombre: 'Entrenar', emoji: '💪', momento: 'manana', xp_valor: 30 },
-  { nombre: 'Meditar', emoji: '🧘', momento: 'manana', xp_valor: 30 },
-  { nombre: 'Leer 20 paginas', emoji: '📖', momento: 'tarde', xp_valor: 30 },
+// Habitos de proposito general, sin relacion con un deporte en particular.
+export const HABITOS_GENERALES: HabitoSugerido[] = [
   { nombre: 'Beber 2L de agua', emoji: '💧', momento: 'manana', xp_valor: 20 },
-  { nombre: 'Dormir 8 horas', emoji: '😴', momento: 'noche', xp_valor: 30 },
-  { nombre: 'Ducha fria', emoji: '🚿', momento: 'manana', xp_valor: 20 },
-  { nombre: 'Ahorrar algo hoy', emoji: '💰', momento: 'noche', xp_valor: 20 },
-  { nombre: 'Sin pantallas antes de dormir', emoji: '📵', momento: 'noche', xp_valor: 20 },
+  { nombre: 'Dormir temprano', emoji: '😴', momento: 'noche', xp_valor: 30 },
+  { nombre: 'Meditar 10 minutos', emoji: '🧘', momento: 'manana', xp_valor: 30 },
+  { nombre: 'Leer 20 paginas', emoji: '📖', momento: 'tarde', xp_valor: 30 },
   { nombre: 'Planificar el dia', emoji: '🗓️', momento: 'manana', xp_valor: 20 },
-  { nombre: 'Estirar / movilidad', emoji: '🤸', momento: 'noche', xp_valor: 20 },
+  { nombre: 'Sin pantallas antes de dormir', emoji: '📵', momento: 'noche', xp_valor: 20 },
+  { nombre: 'Ahorrar algo hoy', emoji: '💰', momento: 'noche', xp_valor: 20 },
 ]
+
+// Habitos especificos segun el deporte elegido en el onboarding — se
+// combinan con HABITOS_GENERALES para no mostrar una lista generica que no
+// tiene nada que ver con lo que la persona realmente practica.
+export const HABITOS_POR_DEPORTE: Record<string, HabitoSugerido[]> = {
+  gym: [
+    { nombre: 'Calentar antes de entrenar', emoji: '🔥', momento: 'manana', xp_valor: 20 },
+    { nombre: 'Estirar despues del gym', emoji: '🤸', momento: 'tarde', xp_valor: 20 },
+    { nombre: 'Comer proteina despues de entrenar', emoji: '🍗', momento: 'tarde', xp_valor: 20 },
+  ],
+  running: [
+    { nombre: 'Estirar despues de correr', emoji: '🤸', momento: 'tarde', xp_valor: 20 },
+    { nombre: 'Hidratarme antes de salir a correr', emoji: '💧', momento: 'manana', xp_valor: 20 },
+    { nombre: 'Revisar mis zapatillas', emoji: '👟', momento: 'manana', xp_valor: 10 },
+  ],
+  ciclismo: [
+    { nombre: 'Revisar la bicicleta antes de salir', emoji: '🔧', momento: 'manana', xp_valor: 10 },
+    { nombre: 'Estirar piernas despues de rodar', emoji: '🤸', momento: 'tarde', xp_valor: 20 },
+  ],
+  natacion: [
+    { nombre: 'Hidratarme despues de nadar', emoji: '💧', momento: 'tarde', xp_valor: 20 },
+    { nombre: 'Estirar hombros y espalda', emoji: '🤸', momento: 'tarde', xp_valor: 20 },
+  ],
+  futbol: [
+    { nombre: 'Calentar antes de jugar', emoji: '🔥', momento: 'manana', xp_valor: 20 },
+    { nombre: 'Estirar despues del partido', emoji: '🤸', momento: 'tarde', xp_valor: 20 },
+  ],
+  crossfit: [
+    { nombre: 'Movilidad antes del WOD', emoji: '🤸', momento: 'manana', xp_valor: 20 },
+    { nombre: 'Registrar tu WOD del dia', emoji: '📝', momento: 'tarde', xp_valor: 20 },
+  ],
+  yoga: [{ nombre: 'Practicar respiracion consciente', emoji: '🧘‍♂️', momento: 'manana', xp_valor: 20 }],
+  otro: [],
+}
+
+// Junta lo general con lo especifico de cada deporte elegido, sin duplicar
+// por nombre si dos deportes sugieren el mismo habito.
+export function habitosSugeridosPara(deportesElegidos: string[]): HabitoSugerido[] {
+  const especificos = deportesElegidos.flatMap((id) => HABITOS_POR_DEPORTE[id] ?? [])
+  const vistos = new Set<string>()
+  return [...especificos, ...HABITOS_GENERALES].filter((h) => {
+    if (vistos.has(h.nombre)) return false
+    vistos.add(h.nombre)
+    return true
+  })
+}
 
 export interface EjercicioSemilla {
   nombre: string
