@@ -8,7 +8,9 @@ import { createClient } from '@/lib/supabase/client'
 import type { Ejercicio, Perfil, RutinaConEjercicios } from '@/lib/types'
 import { XP_TABLE } from '@/lib/gamification'
 import { otorgarXP } from '@/lib/xp-client'
+import { urlEmbedYoutube } from '@/lib/video'
 import ModalNuevoEjercicio from './ModalNuevoEjercicio'
+import MiniaturaEjercicio from './MiniaturaEjercicio'
 
 interface SetEnCurso {
   reps: string
@@ -43,21 +45,6 @@ function mmss(totalSeg: number) {
   const m = Math.floor(totalSeg / 60)
   const s = totalSeg % 60
   return `${m}:${String(s).padStart(2, '0')}`
-}
-
-function urlEmbedYoutube(url: string): string | null {
-  try {
-    const u = new URL(url)
-    if (u.hostname.includes('youtu.be')) return `https://www.youtube.com/embed/${u.pathname.slice(1)}`
-    if (u.hostname.includes('youtube.com')) {
-      if (u.pathname.startsWith('/shorts/')) return `https://www.youtube.com/embed/${u.pathname.split('/')[2]}`
-      const v = u.searchParams.get('v')
-      if (v) return `https://www.youtube.com/embed/${v}`
-    }
-  } catch {
-    return null
-  }
-  return null
 }
 
 export default function SesionActiva({
@@ -389,9 +376,12 @@ export default function SesionActiva({
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
         <div>
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-medium">{actual.ejercicio.nombre}</h2>
-              <span className="pill capitalize mt-1 inline-block">{esCardio ? actual.tipoActividad ?? 'cardio' : actual.ejercicio.grupo_muscular}</span>
+            <div className="flex items-start gap-3">
+              <MiniaturaEjercicio ejercicio={actual.ejercicio} size={52} />
+              <div>
+                <h2 className="text-base font-medium">{actual.ejercicio.nombre}</h2>
+                <span className="pill capitalize mt-1 inline-block">{esCardio ? actual.tipoActividad ?? 'cardio' : actual.ejercicio.grupo_muscular}</span>
+              </div>
             </div>
             {!esCardio && (
               <button onClick={() => setPicadorAbierto(true)} className="btn-tl shrink-0">
@@ -615,9 +605,10 @@ export default function SesionActiva({
                 <button
                   key={ej.id}
                   onClick={() => cambiarEjercicio(ej)}
-                  className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-surface-2 text-sm flex items-center justify-between"
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-2 text-sm flex items-center gap-3"
                 >
-                  {ej.nombre}
+                  <MiniaturaEjercicio ejercicio={ej} size={36} />
+                  <span className="flex-1">{ej.nombre}</span>
                   <span className="pill capitalize">{ej.grupo_muscular}</span>
                 </button>
               ))}

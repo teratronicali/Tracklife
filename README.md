@@ -43,8 +43,10 @@ pero con identidad propia en azul/negro/blanco.
     a apps como Symmetry/Hevy. Los ejercicios se pueden crear **sin ningun limite de nombre o
     grupo muscular** desde cualquier parte del flujo (armando una rutina, cambiando de ejercicio
     a mitad de sesion, o desde el registro rapido), y cada uno puede llevar un **link de
-    tecnica** (video) opcional que se ve o se agrega sin salir de la sesion. Tambien registro
-    rapido de series sueltas, volumen semanal y distribucion por grupo muscular.
+    tecnica** (video) opcional que se ve o se agrega sin salir de la sesion. Cuando el link es
+    de YouTube, su **miniatura real** se muestra junto al ejercicio (en la sesion y al elegirlo)
+    para guiarse de un vistazo; si no tiene video, se ve un icono generico en su lugar. Tambien
+    registro rapido de series sueltas, volumen semanal y distribucion por grupo muscular.
   - **Dieta**: macros (proteina/carbo/grasa) y kcal del dia.
 - **Metas** — de cualquier area (financiera, deportiva, familiar, salud, profesional o
   personal), con imagen, aportes y barra de progreso.

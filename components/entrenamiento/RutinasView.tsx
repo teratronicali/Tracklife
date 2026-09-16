@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Ejercicio, Perfil, RutinaConEjercicios, RutinaEjercicio, TipoRutina } from '@/lib/types'
 import SesionActiva from './SesionActiva'
 import ModalNuevoEjercicio from './ModalNuevoEjercicio'
+import MiniaturaEjercicio from './MiniaturaEjercicio'
 
 const TIPOS_ACTIVIDAD_CARDIO = [
   'running',
@@ -96,6 +97,10 @@ export default function RutinasView({
 
   function nombreEjercicio(id: string) {
     return ejercicios.find((e) => e.id === id)?.nombre ?? '—'
+  }
+
+  function ejercicioPorId(id: string) {
+    return ejercicios.find((e) => e.id === id)
   }
 
   function abrirNueva() {
@@ -358,7 +363,10 @@ export default function RutinasView({
                 {items.map((it, idx) => (
                   <div key={idx} className="card p-3 space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium">{nombreEjercicio(it.ejercicio_id)}</p>
+                      <div className="flex items-center gap-2">
+                        {ejercicioPorId(it.ejercicio_id) && <MiniaturaEjercicio ejercicio={ejercicioPorId(it.ejercicio_id)!} size={32} />}
+                        <p className="text-xs font-medium">{nombreEjercicio(it.ejercicio_id)}</p>
+                      </div>
                       <div className="flex items-center gap-1">
                         <button onClick={() => moverItem(idx, -1)} className="text-muted hover:text-foreground">
                           <ChevronUp size={14} />
