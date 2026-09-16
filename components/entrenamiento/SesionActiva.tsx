@@ -173,9 +173,14 @@ export default function SesionActiva({
     setEjercicios((prev) => prev.map((e, i) => (i !== activo ? e : { ...e, cardio: { ...e.cardio, [campo]: valor } })))
   }
 
+  function todoCompletado(lista: ExercicioSesion[]) {
+    return lista.every((e) => (esCardio ? e.cardio.completado : e.sets.length > 0 && e.sets.every((s) => s.completado)))
+  }
+
   function toggleCardioCompletado() {
-    setEjercicios((prev) =>
-      prev.map((e, i) => {
+    let quedoTodoListo = false
+    setEjercicios((prev) => {
+      const actualizado = prev.map((e, i) => {
         if (i !== activo) return e
         const nuevoCompletado = !e.cardio.completado
         if (nuevoCompletado && !e.cardio.distancia && !e.cardio.duracion) {
@@ -184,7 +189,10 @@ export default function SesionActiva({
         }
         return { ...e, cardio: { ...e.cardio, completado: nuevoCompletado } }
       })
-    )
+      quedoTodoListo = todoCompletado(actualizado)
+      if (quedoTodoListo && !terminando) setTimeout(() => terminarSesion(actualizado), 0)
+      return actualizado
+    })
   }
 
   function toggleCompletado(idxSet: number) {
@@ -224,10 +232,11 @@ export default function SesionActiva({
     setPicadorAbierto(false)
   }
 
-  async function terminarSesion() {
+  async function terminarSesion(ejerciciosOverride?: ExercicioSesion[]) {
+    const lista = ejerciciosOverride ?? ejercicios
     setTerminando(true)
     const filas = esCardio
-      ? ejercicios
+      ? lista
           .filter((e) => e.cardio.completado)
           .map((e) => ({
             usuario_id: usuarioId,
@@ -242,7 +251,7 @@ export default function SesionActiva({
             duracion_min: e.cardio.duracion ? Number(e.cardio.duracion) : null,
             tipo_actividad: e.tipoActividad ?? 'general',
           }))
-      : ejercicios.flatMap((e) =>
+      : lista.flatMap((e) =>
           e.sets
             .map((s, idx) => ({ ...s, numero: idx + 1 }))
             .filter((s) => s.completado)
@@ -303,7 +312,7 @@ export default function SesionActiva({
             {setsCompletados}/{totalSets} {esCardio ? 'actividades' : 'series'}
           </p>
         </div>
-        <button onClick={terminarSesion} disabled={terminando} className="btn-tl-blue">
+        <button onClick={() => terminarSesion()} disabled={terminando} className="btn-tl-blue">
           {terminando ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
           Terminar
         </button>
@@ -510,7 +519,7 @@ export default function SesionActiva({
 
       {esCardio && (
         <div className="flex items-center justify-center gap-1.5 pb-3 text-[11px] text-muted">
-          <Timer size={12} /> Registra tu actividad real al terminar, sin importar si difiere del objetivo
+          <Timer size={12} /> Registra tu actividad real — al marcar la ultima como hecha se guarda solo
         </div>
       )}
 

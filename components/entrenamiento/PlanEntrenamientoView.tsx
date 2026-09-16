@@ -312,9 +312,14 @@ export default function PlanEntrenamientoView({
                   {dia.esPasado && !dia.estado && dia.rutina && <span className="text-[10px] text-muted">Sin registrar</span>}
 
                   <div className="mt-auto space-y-1">
-                    {dia.esHoy && dia.rutina && (
+                    {dia.esHoy && dia.rutina && !dia.estado && (
                       <button onClick={() => setSesionRutina(dia.rutina)} className="btn-tl-blue text-[11px] w-full">
                         <Play size={11} /> Iniciar
+                      </button>
+                    )}
+                    {dia.esHoy && dia.rutina && dia.estado?.estado === 'cumplido' && (
+                      <button onClick={() => setSesionRutina(dia.rutina)} className="btn-tl text-[11px] w-full">
+                        <Play size={11} /> Repetir
                       </button>
                     )}
                     {dia.esHoy && dia.rutina && !dia.estado && (
