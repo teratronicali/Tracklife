@@ -50,12 +50,14 @@ export default function SesionActiva({
   usuarioId,
   perfil,
   onCerrar,
+  onFinalizada,
 }: {
   rutina: RutinaConEjercicios
   ejerciciosDisponibles: Ejercicio[]
   usuarioId: string
   perfil: Perfil
   onCerrar: () => void
+  onFinalizada?: (sesionId: string | null) => void
 }) {
   const supabase = createClient()
   const router = useRouter()
@@ -282,6 +284,7 @@ export default function SesionActiva({
     toast.success(esCardio ? 'Entrenamiento cardio guardado' : `Entrenamiento guardado: ${filas.length} series`)
     router.refresh()
     setTerminando(false)
+    onFinalizada?.(sesionId)
     onCerrar()
   }
 

@@ -8,7 +8,17 @@ import { createClient } from '@/lib/supabase/client'
 import type { Ejercicio, Perfil, RutinaConEjercicios, RutinaEjercicio, TipoRutina } from '@/lib/types'
 import SesionActiva from './SesionActiva'
 
-const TIPOS_ACTIVIDAD_CARDIO = ['running', 'ciclismo', 'natacion', 'general']
+const TIPOS_ACTIVIDAD_CARDIO = [
+  'running',
+  'ciclismo',
+  'bicicleta_estatica',
+  'natacion',
+  'caminata',
+  'remo',
+  'eliptica',
+  'senderismo',
+  'general',
+]
 
 interface RutinaEjercicioInsert {
   usuario_id: string

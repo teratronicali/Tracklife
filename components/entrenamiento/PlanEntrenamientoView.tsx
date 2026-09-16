@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar, Play, Loader2, X, Sparkles, Trash2, RefreshCw } from 'lucide-react'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { Calendar, Play, Loader2, X, Sparkles, Trash2, RefreshCw, Check, CalendarClock, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
-import type { Ejercicio, NivelEntrenamiento, Perfil, PlanConDias, RutinaConEjercicios } from '@/lib/types'
+import type { Ejercicio, NivelEntrenamiento, Perfil, PlanConDias, PlanDiaEstado, RutinaConEjercicios } from '@/lib/types'
 import {
   DIAS_SEMANA,
   NIVELES_ENTRENAMIENTO,
@@ -16,7 +18,23 @@ import {
   type ObjetivoEntrenamiento,
   type PlanPlantilla,
 } from '@/lib/plantillas-entrenamiento'
+import {
+  construirCalendarioSemana,
+  fechaISO,
+  fetchEstadosPlan,
+  inicioSemana,
+  marcarCumplidoRetroactivo,
+  marcarIncumplidoYCompensar,
+  revisarDiasPendientes,
+  sumarDias,
+  type DiaCalendario,
+  type DiaPorRevisar,
+} from '@/lib/plan-semana'
 import SesionActiva from './SesionActiva'
+
+function formatoFecha(fecha: string) {
+  return format(new Date(`${fecha}T00:00:00`), "EEEE d 'de' MMMM", { locale: es })
+}
 
 export default function PlanEntrenamientoView({
   planInicial,
@@ -46,7 +64,43 @@ export default function PlanEntrenamientoView({
   const [nivelPersonalizado, setNivelPersonalizado] = useState<NivelEntrenamiento>('principiante')
   const [sesionRutina, setSesionRutina] = useState<RutinaConEjercicios | null>(null)
 
+  const [estadosSemana, setEstadosSemana] = useState<PlanDiaEstado[]>([])
+  const [porRevisar, setPorRevisar] = useState<DiaPorRevisar[]>([])
+  const [resolviendo, setResolviendo] = useState(false)
+  const [confirmandoHoy, setConfirmandoHoy] = useState<DiaCalendario | null>(null)
+
   useEffect(() => setPlan(planInicial), [planInicial])
+
+  const hoy = new Date()
+  const hoyISO = fechaISO(hoy)
+  const inicioLunes = inicioSemana(hoy)
+
+  useEffect(() => {
+    if (!plan) {
+      setEstadosSemana([])
+      setPorRevisar([])
+      return
+    }
+    let cancelado = false
+    async function cargar() {
+      if (!plan) return
+      const { porRevisar: pendientes } = await revisarDiasPendientes(supabase, usuarioId, plan, rutinasDisponibles)
+      const semana = await fetchEstadosPlan(supabase, plan.id, fechaISO(inicioLunes), fechaISO(sumarDias(inicioLunes, 6)))
+      if (!cancelado) {
+        setPorRevisar(pendientes)
+        setEstadosSemana(semana)
+      }
+    }
+    cargar()
+    return () => {
+      cancelado = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan?.id])
+
+  const calendario: DiaCalendario[] = plan ? construirCalendarioSemana(plan, estadosSemana, rutinasDisponibles, inicioLunes, hoyISO) : []
+  const diaHoy = calendario.find((d) => d.esHoy) ?? null
+  const revisando = porRevisar[0] ?? null
 
   const plantillasFiltradas = PLANES_PLANTILLA.filter(
     (p) => (filtroObjetivo === 'todos' || p.objetivo === filtroObjetivo) && (filtroNivel === 'todos' || p.nivel === filtroNivel)
@@ -128,6 +182,63 @@ export default function PlanEntrenamientoView({
     router.refresh()
   }
 
+  async function resolverSiEntrene() {
+    if (!plan || !revisando) return
+    setResolviendo(true)
+    await marcarCumplidoRetroactivo(supabase, usuarioId, plan.id, revisando.fecha, revisando.rutina.id)
+    setPorRevisar((prev) => prev.slice(1))
+    setResolviendo(false)
+    toast.success('Anotado, gracias por confirmar')
+  }
+
+  async function resolverNoPude() {
+    if (!plan || !revisando) return
+    setResolviendo(true)
+    const { compensadoEn } = await marcarIncumplidoYCompensar(supabase, usuarioId, plan, revisando.fecha, revisando.rutina.id)
+    setPorRevisar((prev) => prev.slice(1))
+    const semana = await fetchEstadosPlan(supabase, plan.id, fechaISO(inicioLunes), fechaISO(sumarDias(inicioLunes, 6)))
+    setEstadosSemana(semana)
+    setResolviendo(false)
+    if (compensadoEn) {
+      toast.success(`Sin problema. Movimos ${revisando.rutina.nombre} al ${formatoFecha(compensadoEn)}`)
+    } else {
+      toast('No quedan dias de descanso libres esta semana para compensarlo', { icon: '⚠️' })
+    }
+  }
+
+  async function confirmarNoHoy() {
+    if (!plan || !confirmandoHoy?.rutina) return
+    setResolviendo(true)
+    const { compensadoEn } = await marcarIncumplidoYCompensar(supabase, usuarioId, plan, confirmandoHoy.fecha, confirmandoHoy.rutina.id)
+    const semana = await fetchEstadosPlan(supabase, plan.id, fechaISO(inicioLunes), fechaISO(sumarDias(inicioLunes, 6)))
+    setEstadosSemana(semana)
+    setResolviendo(false)
+    setConfirmandoHoy(null)
+    if (compensadoEn) {
+      toast.success(`Listo. Movimos ${confirmandoHoy.rutina.nombre} al ${formatoFecha(compensadoEn)}`)
+    } else {
+      toast('Quedo marcado. No hay dias de descanso libres esta semana para compensarlo', { icon: '⚠️' })
+    }
+  }
+
+  async function marcarHoyCumplido(sesionId: string | null) {
+    if (!plan || !diaHoy?.rutina) return
+    await supabase
+      .from('plan_dia_estados')
+      .upsert(
+        { usuario_id: usuarioId, plan_id: plan.id, fecha: hoyISO, rutina_id: diaHoy.rutina.id, estado: 'cumplido', sesion_id: sesionId },
+        { onConflict: 'plan_id,fecha' }
+      )
+    const semana = await fetchEstadosPlan(supabase, plan.id, fechaISO(inicioLunes), fechaISO(sumarDias(inicioLunes, 6)))
+    setEstadosSemana(semana)
+  }
+
+  const ESTADO_BADGE: Record<string, { label: string; color: string }> = {
+    cumplido: { label: 'Cumplido', color: 'var(--tl-green)' },
+    incumplido: { label: 'Incumplido', color: 'var(--tl-red)' },
+    compensado: { label: 'Compensacion', color: 'var(--tl-amber)' },
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -163,35 +274,69 @@ export default function PlanEntrenamientoView({
             <span className="text-xs text-muted">{plan.nombre}</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-            {DIAS_SEMANA.map((nombreDia, diaSemana) => {
-              const dia = plan.dias.find((d) => d.dia_semana === diaSemana)
-              const rutina = dia?.rutina
+            {calendario.map((dia) => {
+              const plantilla = plan.dias.find((d) => d.dia_semana === dia.diaSemana)
+              const badge = dia.estado && dia.estado.estado !== 'pendiente' ? ESTADO_BADGE[dia.estado.estado] : null
               return (
-                <div key={diaSemana} className="card p-3 flex flex-col gap-2 min-h-[140px]">
-                  <p className="text-[11px] text-muted uppercase tracking-wide">{nombreDia}</p>
-                  {rutina ? (
+                <div
+                  key={dia.fecha}
+                  className="card p-3 flex flex-col gap-1.5 min-h-[150px]"
+                  style={dia.esHoy ? { borderColor: 'var(--tl-blue)' } : undefined}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-muted uppercase tracking-wide">{dia.nombreDia}</p>
+                    <p className="text-[10px] text-muted">{dia.fecha.slice(5)}</p>
+                  </div>
+                  {dia.rutina ? (
                     <>
-                      <p className="text-xs font-medium leading-tight">{rutina.nombre}</p>
-                      <span className="pill w-fit">{rutina.tipo === 'cardio' ? 'Cardio' : 'Gym'}</span>
-                      <button onClick={() => setSesionRutina(rutina)} className="btn-tl-blue text-[11px] mt-auto">
-                        <Play size={11} /> Iniciar
-                      </button>
+                      <p className="text-xs font-medium leading-tight">{dia.rutina.nombre}</p>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="pill">{dia.rutina.tipo === 'cardio' ? 'Cardio' : 'Gym'}</span>
+                        {dia.esCompensacion && (
+                          <span className="pill" style={{ color: 'var(--tl-amber)' }}>
+                            Compensacion
+                          </span>
+                        )}
+                      </div>
                     </>
                   ) : (
-                    <p className="text-xs text-muted mt-auto">Descanso</p>
+                    <p className="text-xs text-muted">Descanso</p>
                   )}
-                  <select
-                    className="input-tl text-[10px] py-1"
-                    value={dia?.rutina_id ?? ''}
-                    onChange={(e) => asignarRutinaADia(diaSemana, e.target.value || null)}
-                  >
-                    <option value="">Descanso</option>
-                    {rutinasDisponibles.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.nombre}
-                      </option>
-                    ))}
-                  </select>
+
+                  {badge && (
+                    <span className="text-[10px] font-medium" style={{ color: badge.color }}>
+                      {dia.estado?.estado === 'cumplido' ? '✓ ' : dia.estado?.estado === 'incumplido' ? '✕ ' : '↻ '}
+                      {badge.label}
+                    </span>
+                  )}
+                  {dia.esPasado && !dia.estado && dia.rutina && <span className="text-[10px] text-muted">Sin registrar</span>}
+
+                  <div className="mt-auto space-y-1">
+                    {dia.esHoy && dia.rutina && (
+                      <button onClick={() => setSesionRutina(dia.rutina)} className="btn-tl-blue text-[11px] w-full">
+                        <Play size={11} /> Iniciar
+                      </button>
+                    )}
+                    {dia.esHoy && dia.rutina && !dia.estado && (
+                      <button onClick={() => setConfirmandoHoy(dia)} className="text-[10px] text-muted underline block w-full text-center">
+                        No voy a entrenar hoy
+                      </button>
+                    )}
+                    {!dia.esPasado && !dia.esCompensacion && (
+                      <select
+                        className="input-tl text-[10px] py-1"
+                        value={plantilla?.rutina_id ?? ''}
+                        onChange={(e) => asignarRutinaADia(dia.diaSemana, e.target.value || null)}
+                      >
+                        <option value="">Descanso</option>
+                        {rutinasDisponibles.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 </div>
               )
             })}
@@ -324,6 +469,63 @@ export default function PlanEntrenamientoView({
         </div>
       )}
 
+      {revisando && (
+        <div className="fixed inset-0 bg-black/70 z-[65] flex items-center justify-center p-4">
+          <div className="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+              <CalendarClock size={16} style={{ color: 'var(--tl-blue)' }} />
+              <h2 className="font-medium text-sm">¿Que paso el {formatoFecha(revisando.fecha)}?</h2>
+            </div>
+            <div className="p-5 space-y-3">
+              <p className="text-xs text-muted">
+                Tenias programado <strong className="text-foreground">{revisando.rutina.nombre}</strong> y no quedo registrado.
+              </p>
+              <button onClick={resolverSiEntrene} disabled={resolviendo} className="btn-tl w-full justify-start">
+                {resolviendo ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                Si entrene, se me olvido registrarlo
+              </button>
+              <button onClick={resolverNoPude} disabled={resolviendo} className="btn-tl w-full justify-start">
+                {resolviendo ? <Loader2 size={14} className="animate-spin" /> : <AlertTriangle size={14} />}
+                No pude entrenar
+              </button>
+              <button
+                onClick={() => setPorRevisar((prev) => prev.slice(1))}
+                disabled={resolviendo}
+                className="text-xs text-muted underline block w-full text-center pt-1"
+              >
+                Ahora no, preguntame despues
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmandoHoy && (
+        <div className="fixed inset-0 bg-black/70 z-[65] flex items-center justify-center p-4">
+          <div className="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+              <AlertTriangle size={16} style={{ color: 'var(--tl-amber)' }} />
+              <h2 className="font-medium text-sm">¿No vas a entrenar hoy?</h2>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-muted">
+                Vamos a marcar <strong className="text-foreground">{confirmandoHoy.rutina?.nombre}</strong> como incumplido y a buscarte un dia de
+                descanso libre esta semana para compensarlo.
+              </p>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setConfirmandoHoy(null)} className="btn-tl">
+                  Cancelar
+                </button>
+                <button onClick={confirmarNoHoy} disabled={resolviendo} className="btn-tl-blue">
+                  {resolviendo ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                  Si, confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {sesionRutina && (
         <SesionActiva
           rutina={sesionRutina}
@@ -331,6 +533,7 @@ export default function PlanEntrenamientoView({
           usuarioId={usuarioId}
           perfil={perfil}
           onCerrar={() => setSesionRutina(null)}
+          onFinalizada={marcarHoyCumplido}
         />
       )}
     </div>

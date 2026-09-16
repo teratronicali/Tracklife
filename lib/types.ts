@@ -188,6 +188,21 @@ export interface PlanConDias extends PlanEntrenamiento {
   dias: PlanDia[]
 }
 
+export type EstadoDiaPlan = 'pendiente' | 'cumplido' | 'incumplido' | 'compensado'
+
+export interface PlanDiaEstado {
+  id: string
+  usuario_id: string
+  plan_id: string
+  fecha: string
+  rutina_id: string | null
+  estado: EstadoDiaPlan
+  origen_fecha: string | null
+  sesion_id: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface IntegracionStrava {
   usuario_id: string
   athlete_id: number

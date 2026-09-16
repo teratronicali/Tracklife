@@ -28,6 +28,12 @@ pero con identidad propia en azul/negro/blanco.
     experto) que arma automaticamente tus rutinas y las acomoda en un **calendario semanal**
     (Lunes a Domingo), o crea un plan personalizado y asigna tus propias rutinas dia por dia.
     Desde ahi mismo inicias el entrenamiento del dia con un click.
+    El calendario se **reajusta solo**: si termina un dia programado sin registrar nada, la
+    proxima vez que abras la app te pregunta que paso ("Si entrene, se me olvido registrarlo"
+    o "No pude entrenar"). Si no pudiste, ese dia queda marcado **incumplido** y el sistema
+    busca automaticamente el proximo dia de descanso libre de esa misma semana para mover ahi
+    el entrenamiento perdido (**compensacion**) — sin tener que rehacer el plan a mano. Tambien
+    puedes avisar de una vez con "No voy a entrenar hoy" sin esperar al dia siguiente.
   - **Entrenamientos**: arma **rutinas** de gimnasio (ejercicios + series/reps/peso/descanso
     objetivo) o de **cardio/deporte** (running, ciclismo, natacion... con distancia/duracion
     objetivo) e iniciala para una **sesion interactiva**: vas marcando cada serie (peso, reps,
@@ -81,7 +87,8 @@ Todo esto vive en `lib/gamification.ts` (tabla de XP, rangos, formula de nivel) 
 1. Crea un proyecto nuevo en [Supabase](https://supabase.com).
 2. En el SQL Editor de ese proyecto, ejecuta en orden el contenido de
    `supabase/migrations/001_init.sql`, `002_onboarding_strava.sql`, `003_planes_pagos.sql`,
-   `004_racha_bonus.sql`, `005_rutinas_sesiones.sql` y `006_planes_entrenamiento.sql`
+   `004_racha_bonus.sql`, `005_rutinas_sesiones.sql`, `006_planes_entrenamiento.sql` y
+   `007_plan_dia_estados.sql`
    (crea todas las tablas, RLS y funciones necesarias).
 3. Copia `.env.local.example` a `.env.local` y completa con los datos de tu proyecto
    (Settings → API en el dashboard de Supabase):
