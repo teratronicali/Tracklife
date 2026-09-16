@@ -106,6 +106,7 @@ export default function EntrenamientoView({
 
   const [nuevoEjercicioNombre, setNuevoEjercicioNombre] = useState('')
   const [nuevoEjercicioGrupo, setNuevoEjercicioGrupo] = useState<Ejercicio['grupo_muscular']>('general')
+  const [nuevoEjercicioVideoUrl, setNuevoEjercicioVideoUrl] = useState('')
 
   const [comidaNombre, setComidaNombre] = useState('')
   const [comidaProt, setComidaProt] = useState('')
@@ -161,7 +162,12 @@ export default function EntrenamientoView({
     setGuardando(true)
     const { data, error } = await supabase
       .from('ejercicios')
-      .insert({ usuario_id: usuarioId, nombre: nuevoEjercicioNombre, grupo_muscular: nuevoEjercicioGrupo })
+      .insert({
+        usuario_id: usuarioId,
+        nombre: nuevoEjercicioNombre,
+        grupo_muscular: nuevoEjercicioGrupo,
+        video_url: nuevoEjercicioVideoUrl.trim() || null,
+      })
       .select()
       .single()
     if (error) {
@@ -172,6 +178,7 @@ export default function EntrenamientoView({
     setEjercicios((prev) => [...prev, data as Ejercicio].sort((a, b) => a.nombre.localeCompare(b.nombre)))
     setEjercicioId(data.id)
     setNuevoEjercicioNombre('')
+    setNuevoEjercicioVideoUrl('')
     setGuardando(false)
     setModalEjercicio(false)
     toast.success('Ejercicio creado')
@@ -610,6 +617,15 @@ export default function EntrenamientoView({
                     </option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">Link de tecnica (opcional)</label>
+                <input
+                  className="input-tl"
+                  value={nuevoEjercicioVideoUrl}
+                  onChange={(e) => setNuevoEjercicioVideoUrl(e.target.value)}
+                  placeholder="Ej. link de YouTube mostrando como se hace"
+                />
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-border">

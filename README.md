@@ -26,8 +26,9 @@ pero con identidad propia en azul/negro/blanco.
   - **Plan**: elige un **plan de entrenamiento predeterminado** (12 plantillas: fuerza,
     hipertrofia, perdida de peso o resistencia/running, cada uno en principiante/intermedio/
     experto) que arma automaticamente tus rutinas y las acomoda en un **calendario semanal**
-    (Lunes a Domingo), o crea un plan personalizado y asigna tus propias rutinas dia por dia.
-    Desde ahi mismo inicias el entrenamiento del dia con un click.
+    (Lunes a Domingo), o crea un plan **personalizado**: le pones nombre/objetivo/nivel y, en
+    la misma pantalla, asignas tus propias rutinas (ya creadas en "Entrenamientos") a los dias
+    que quieras. Desde ahi mismo inicias el entrenamiento del dia con un click.
     El calendario se **reajusta solo**: si termina un dia programado sin registrar nada, la
     proxima vez que abras la app te pregunta que paso ("Si entrene, se me olvido registrarlo"
     o "No pude entrenar"). Si no pudiste, ese dia queda marcado **incumplido** y el sistema
@@ -38,10 +39,13 @@ pero con identidad propia en azul/negro/blanco.
     objetivo) o de **cardio/deporte** (running, ciclismo, natacion... con distancia/duracion
     objetivo) e iniciala para una **sesion interactiva**: vas marcando cada serie (peso, reps,
     RIR) o actividad (distancia, duracion) con timer de descanso automatico, navegacion entre
-    ejercicios y opcion de swap — parecido a apps como Symmetry/Hevy. Tambien registro rapido
-    de series sueltas, volumen semanal y distribucion por grupo muscular.
+    ejercicios y opcion de swap — parecido a apps como Symmetry/Hevy. Cada ejercicio puede
+    llevar un **link de tecnica** (video) opcional que se puede ver o agregar sin salir de la
+    sesion. Tambien registro rapido de series sueltas, volumen semanal y distribucion por
+    grupo muscular.
   - **Dieta**: macros (proteina/carbo/grasa) y kcal del dia.
-- **Metas** — metas financieras o personales con imagen, aportes y barra de progreso.
+- **Metas** — de cualquier area (financiera, deportiva, familiar, salud, profesional o
+  personal), con imagen, aportes y barra de progreso.
 - **Tareas** — kanban (Pendiente / En progreso / Hecho) con etiquetas y subtareas.
 - **Leaderboard** — ranking global por XP con podio top 3.
 - **Recompensas** — desbloqueos por nivel.
@@ -87,8 +91,8 @@ Todo esto vive en `lib/gamification.ts` (tabla de XP, rangos, formula de nivel) 
 1. Crea un proyecto nuevo en [Supabase](https://supabase.com).
 2. En el SQL Editor de ese proyecto, ejecuta en orden el contenido de
    `supabase/migrations/001_init.sql`, `002_onboarding_strava.sql`, `003_planes_pagos.sql`,
-   `004_racha_bonus.sql`, `005_rutinas_sesiones.sql`, `006_planes_entrenamiento.sql` y
-   `007_plan_dia_estados.sql`
+   `004_racha_bonus.sql`, `005_rutinas_sesiones.sql`, `006_planes_entrenamiento.sql`,
+   `007_plan_dia_estados.sql`, `008_tipos_meta.sql` y `009_ejercicio_video.sql`
    (crea todas las tablas, RLS y funciones necesarias).
 3. Copia `.env.local.example` a `.env.local` y completa con los datos de tu proyecto
    (Settings → API en el dashboard de Supabase):

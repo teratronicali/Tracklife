@@ -95,6 +95,7 @@ export interface Ejercicio {
   usuario_id: string
   nombre: string
   grupo_muscular: GrupoMuscular
+  video_url: string | null
   created_at: string
 }
 
@@ -234,7 +235,16 @@ export interface NutricionMeta {
   grasa_objetivo: number
 }
 
-export type TipoMeta = 'financiera' | 'personal'
+export type TipoMeta = 'financiera' | 'deportiva' | 'familiar' | 'salud' | 'profesional' | 'personal'
+
+export const TIPOS_META: { id: TipoMeta; label: string; emoji: string }[] = [
+  { id: 'financiera', label: 'Financiera', emoji: '💰' },
+  { id: 'deportiva', label: 'Deportiva', emoji: '🏆' },
+  { id: 'familiar', label: 'Familiar', emoji: '👨‍👩‍👧' },
+  { id: 'salud', label: 'Salud', emoji: '❤️' },
+  { id: 'profesional', label: 'Profesional', emoji: '💼' },
+  { id: 'personal', label: 'Personal', emoji: '✨' },
+]
 
 export interface Meta {
   id: string

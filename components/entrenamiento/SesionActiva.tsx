@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Check, ChevronLeft, ChevronRight, Plus, Trash2, Repeat, Loader2, TimerReset, Timer } from 'lucide-react'
+import { X, Check, ChevronLeft, ChevronRight, Plus, Trash2, Repeat, Loader2, TimerReset, Timer, PlayCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
 import type { Ejercicio, Perfil, RutinaConEjercicios } from '@/lib/types'
@@ -44,6 +44,21 @@ function mmss(totalSeg: number) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+function urlEmbedYoutube(url: string): string | null {
+  try {
+    const u = new URL(url)
+    if (u.hostname.includes('youtu.be')) return `https://www.youtube.com/embed/${u.pathname.slice(1)}`
+    if (u.hostname.includes('youtube.com')) {
+      if (u.pathname.startsWith('/shorts/')) return `https://www.youtube.com/embed/${u.pathname.split('/')[2]}`
+      const v = u.searchParams.get('v')
+      if (v) return `https://www.youtube.com/embed/${v}`
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
 export default function SesionActiva({
   rutina,
   ejerciciosDisponibles,
@@ -70,6 +85,10 @@ export default function SesionActiva({
   const [descanso, setDescanso] = useState<number | null>(null)
   const [picadorAbierto, setPicadorAbierto] = useState(false)
   const [terminando, setTerminando] = useState(false)
+  const [tecnicaAbierta, setTecnicaAbierta] = useState(false)
+  const [agregandoLink, setAgregandoLink] = useState(false)
+  const [linkNuevo, setLinkNuevo] = useState('')
+  const [guardandoLink, setGuardandoLink] = useState(false)
 
   const [ejercicios, setEjercicios] = useState<ExercicioSesion[]>(() =>
     rutina.ejercicios.map((re) => ({
@@ -232,6 +251,24 @@ export default function SesionActiva({
     setPicadorAbierto(false)
   }
 
+  async function guardarLinkTecnica() {
+    if (!linkNuevo.trim()) return
+    setGuardandoLink(true)
+    const { error } = await supabase.from('ejercicios').update({ video_url: linkNuevo.trim() }).eq('id', actual.ejercicio.id)
+    if (error) {
+      toast.error('No se pudo guardar el link')
+      setGuardandoLink(false)
+      return
+    }
+    setEjercicios((prev) =>
+      prev.map((e, i) => (i !== activo ? e : { ...e, ejercicio: { ...e.ejercicio, video_url: linkNuevo.trim() } }))
+    )
+    setLinkNuevo('')
+    setAgregandoLink(false)
+    setGuardandoLink(false)
+    toast.success('Listo, ya puedes verla cuando quieras')
+  }
+
   async function terminarSesion(ejerciciosOverride?: ExercicioSesion[]) {
     const lista = ejerciciosOverride ?? ejercicios
     setTerminando(true)
@@ -370,6 +407,31 @@ export default function SesionActiva({
               {actual.previa && <span> · Anterior: {actual.previa}</span>}
             </p>
           )}
+
+          <div className="mt-2">
+            {actual.ejercicio.video_url ? (
+              <button onClick={() => setTecnicaAbierta(true)} className="btn-tl text-[11px]">
+                <PlayCircle size={13} /> Ver tecnica
+              </button>
+            ) : agregandoLink ? (
+              <div className="flex gap-2">
+                <input
+                  className="input-tl text-xs py-1.5"
+                  placeholder="Pega el link de un video mostrando la tecnica"
+                  value={linkNuevo}
+                  onChange={(e) => setLinkNuevo(e.target.value)}
+                  autoFocus
+                />
+                <button onClick={guardarLinkTecnica} disabled={guardandoLink} className="btn-tl-blue text-xs shrink-0">
+                  {guardandoLink ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setAgregandoLink(true)} className="text-[11px] text-muted underline">
+                + Agregar link de tecnica
+              </button>
+            )}
+          </div>
         </div>
 
         {esCardio ? (
@@ -544,6 +606,38 @@ export default function SesionActiva({
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {tecnicaAbierta && actual.ejercicio.video_url && (
+        <div className="fixed inset-0 bg-black/80 z-[85] flex items-center justify-center p-4" onClick={() => setTecnicaAbierta(false)}>
+          <div
+            className="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <h2 className="text-sm font-medium">{actual.ejercicio.nombre}</h2>
+              <button onClick={() => setTecnicaAbierta(false)} className="text-muted hover:text-foreground">
+                <X size={18} />
+              </button>
+            </div>
+            {urlEmbedYoutube(actual.ejercicio.video_url) ? (
+              <div className="aspect-video">
+                <iframe
+                  src={urlEmbedYoutube(actual.ejercicio.video_url)!}
+                  className="w-full h-full"
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <div className="p-6 text-center">
+                <a href={actual.ejercicio.video_url} target="_blank" rel="noopener noreferrer" className="btn-tl-blue text-xs inline-flex">
+                  Abrir video
+                </a>
+              </div>
+            )}
           </div>
         </div>
       )}

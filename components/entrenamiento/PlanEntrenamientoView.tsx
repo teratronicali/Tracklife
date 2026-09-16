@@ -62,6 +62,7 @@ export default function PlanEntrenamientoView({
   const [nombrePersonalizado, setNombrePersonalizado] = useState('')
   const [objetivoPersonalizado, setObjetivoPersonalizado] = useState<ObjetivoEntrenamiento>('fuerza')
   const [nivelPersonalizado, setNivelPersonalizado] = useState<NivelEntrenamiento>('principiante')
+  const [diasPersonalizado, setDiasPersonalizado] = useState<(string | null)[]>(Array(7).fill(null))
   const [sesionRutina, setSesionRutina] = useState<RutinaConEjercicios | null>(null)
 
   const [estadosSemana, setEstadosSemana] = useState<PlanDiaEstado[]>([])
@@ -123,6 +124,10 @@ export default function PlanEntrenamientoView({
     }
   }
 
+  function actualizarDiaPersonalizado(diaSemana: number, rutinaId: string | null) {
+    setDiasPersonalizado((prev) => prev.map((v, i) => (i === diaSemana ? rutinaId : v)))
+  }
+
   async function crearPlanPersonalizado() {
     if (!nombrePersonalizado.trim()) {
       toast.error('Ponle un nombre a tu plan')
@@ -140,13 +145,24 @@ export default function PlanEntrenamientoView({
       setAplicando(null)
       return
     }
-    const filas = Array.from({ length: 7 }, (_, dia_semana) => ({ usuario_id: usuarioId, plan_id: nuevoPlan.id, dia_semana, descanso: true }))
+    const filas = diasPersonalizado.map((rutinaId, dia_semana) => ({
+      usuario_id: usuarioId,
+      plan_id: nuevoPlan.id,
+      dia_semana,
+      rutina_id: rutinaId,
+      descanso: rutinaId === null,
+    }))
     const { data: dias } = await supabase.from('plan_dias').insert(filas).select()
-    setPlan({ ...nuevoPlan, dias: (dias ?? []).sort((a, b) => a.dia_semana - b.dia_semana) })
+    const diasConRutina = (dias ?? []).map((d) => ({
+      ...d,
+      rutina: d.rutina_id ? rutinasDisponibles.find((r) => r.id === d.rutina_id) : undefined,
+    }))
+    setPlan({ ...nuevoPlan, dias: diasConRutina.sort((a, b) => a.dia_semana - b.dia_semana) })
     setNombrePersonalizado('')
+    setDiasPersonalizado(Array(7).fill(null))
     setAplicando(null)
     setModal(false)
-    toast.success('Plan creado, asigna una rutina a cada dia')
+    toast.success('Plan creado')
     router.refresh()
   }
 
@@ -435,37 +451,67 @@ export default function PlanEntrenamientoView({
                   </div>
                 </>
               ) : (
-                <div className="space-y-4 max-w-sm">
-                  <div>
-                    <label className="block text-xs font-medium text-muted mb-1">Nombre del plan</label>
-                    <input className="input-tl" value={nombrePersonalizado} onChange={(e) => setNombrePersonalizado(e.target.value)} placeholder="Ej. Mi plan de verano" />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg">
+                    <div>
+                      <label className="block text-xs font-medium text-muted mb-1">Nombre del plan</label>
+                      <input className="input-tl" value={nombrePersonalizado} onChange={(e) => setNombrePersonalizado(e.target.value)} placeholder="Ej. Mi plan de verano" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted mb-1">Objetivo</label>
+                      <select className="input-tl" value={objetivoPersonalizado} onChange={(e) => setObjetivoPersonalizado(e.target.value as ObjetivoEntrenamiento)}>
+                        {OBJETIVOS_ENTRENAMIENTO.map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.emoji} {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted mb-1">Nivel</label>
+                      <select className="input-tl" value={nivelPersonalizado} onChange={(e) => setNivelPersonalizado(e.target.value as NivelEntrenamiento)}>
+                        {NIVELES_ENTRENAMIENTO.map((n) => (
+                          <option key={n.id} value={n.id}>
+                            {n.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted mb-1">Objetivo</label>
-                    <select className="input-tl" value={objetivoPersonalizado} onChange={(e) => setObjetivoPersonalizado(e.target.value as ObjetivoEntrenamiento)}>
-                      {OBJETIVOS_ENTRENAMIENTO.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.emoji} {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted mb-1">Nivel</label>
-                    <select className="input-tl" value={nivelPersonalizado} onChange={(e) => setNivelPersonalizado(e.target.value as NivelEntrenamiento)}>
-                      {NIVELES_ENTRENAMIENTO.map((n) => (
-                        <option key={n.id} value={n.id}>
-                          {n.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <p className="text-[11px] text-muted">
-                    Se crea una semana vacia (7 dias de descanso) para que asignes tus propias rutinas dia por dia desde el calendario.
-                  </p>
+
+                  {rutinasDisponibles.length === 0 ? (
+                    <p className="text-[11px] text-muted">
+                      Aun no tienes rutinas propias creadas. Crea al menos una desde la pestana &quot;Entrenamientos&quot; y luego
+                      vuelve aqui para asignarla a los dias que quieras — o crea el plan vacio y asignalas despues desde el calendario.
+                    </p>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-medium text-muted mb-2">Asigna tus rutinas a cada dia (opcional, puedes ajustarlo despues)</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                        {DIAS_SEMANA.map((nombreDia, diaSemana) => (
+                          <div key={diaSemana} className="space-y-1">
+                            <p className="text-[10px] text-muted uppercase tracking-wide">{nombreDia}</p>
+                            <select
+                              className="input-tl text-[10px] py-1"
+                              value={diasPersonalizado[diaSemana] ?? ''}
+                              onChange={(e) => actualizarDiaPersonalizado(diaSemana, e.target.value || null)}
+                            >
+                              <option value="">Descanso</option>
+                              {rutinasDisponibles.map((r) => (
+                                <option key={r.id} value={r.id}>
+                                  {r.nombre}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <button onClick={crearPlanPersonalizado} disabled={aplicando === 'personalizado'} className="btn-tl-blue text-xs">
                     {aplicando === 'personalizado' ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-                    Crear plan vacio
+                    Crear plan
                   </button>
                 </div>
               )}

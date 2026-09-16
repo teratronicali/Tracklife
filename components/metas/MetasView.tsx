@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatMoney } from '@/lib/utils'
 import { puedeCrear, MENSAJE_LIMITE } from '@/lib/planes'
 import { otorgarXP } from '@/lib/xp-client'
-import type { Meta, Perfil, TipoMeta } from '@/lib/types'
+import { TIPOS_META, type Meta, type Perfil, type TipoMeta } from '@/lib/types'
 import { XP_TABLE } from '@/lib/gamification'
 
 export default function MetasView({
@@ -197,7 +197,9 @@ export default function MetasView({
               )}
               <div className="p-4 flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="pill capitalize">{m.tipo}</span>
+                  <span className="pill">
+                    {TIPOS_META.find((t) => t.id === m.tipo)?.emoji} {TIPOS_META.find((t) => t.id === m.tipo)?.label ?? m.tipo}
+                  </span>
                   <div className="flex items-center gap-2">
                     <button onClick={() => archivar(m)} className="text-muted hover:text-foreground">
                       <Archive size={14} />
@@ -262,8 +264,11 @@ export default function MetasView({
               <div>
                 <label className="block text-xs font-medium text-muted mb-1">Tipo</label>
                 <select className="input-tl" value={tipo} onChange={(e) => setTipo(e.target.value as TipoMeta)}>
-                  <option value="personal">Personal</option>
-                  <option value="financiera">Financiera</option>
+                  {TIPOS_META.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.emoji} {t.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">

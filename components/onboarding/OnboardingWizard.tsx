@@ -6,7 +6,7 @@ import { Zap, ArrowRight, ArrowLeft, Check, Loader2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
 import { DEPORTES, ENFOQUES_FINANCIEROS, HABITOS_GENERALES, HABITOS_POR_DEPORTE, habitosSugeridosPara, type HabitoSugerido } from '@/lib/onboarding'
-import type { Perfil, TipoMeta } from '@/lib/types'
+import { TIPOS_META, type Perfil, type TipoMeta } from '@/lib/types'
 
 const PASOS = ['Bienvenida', 'Deporte', 'Habitos', 'Finanzas', 'Meta', 'Listo']
 
@@ -312,7 +312,10 @@ export default function OnboardingWizard({ perfil, usuarioId }: { perfil: Perfil
             <div className="flex-1 flex flex-col gap-4">
               <div>
                 <h2 className="text-base font-medium">Quieres registrar una primera meta?</h2>
-                <p className="text-xs text-muted mt-0.5">Opcional — puedes dejarlo en blanco y crearla despues.</p>
+                <p className="text-xs text-muted mt-0.5">
+                  Puede ser de cualquier area — deportiva, familiar, financiera, de salud... Opcional, puedes dejarlo en blanco y
+                  crearla despues.
+                </p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-muted mb-1">Titulo</label>
@@ -320,19 +323,22 @@ export default function OnboardingWizard({ perfil, usuarioId }: { perfil: Perfil
                   className="input-tl"
                   value={metaTitulo}
                   onChange={(e) => setMetaTitulo(e.target.value)}
-                  placeholder="Ej. Comprar un carro"
+                  placeholder="Ej. Correr mi primera 10K"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted mb-1">Tipo</label>
                   <select className="input-tl" value={metaTipo} onChange={(e) => setMetaTipo(e.target.value as TipoMeta)}>
-                    <option value="personal">Personal</option>
-                    <option value="financiera">Financiera</option>
+                    {TIPOS_META.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.emoji} {t.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted mb-1">Monto objetivo</label>
+                  <label className="block text-xs font-medium text-muted mb-1">Monto objetivo (opcional)</label>
                   <input type="number" className="input-tl" value={metaMonto} onChange={(e) => setMetaMonto(e.target.value)} />
                 </div>
               </div>
