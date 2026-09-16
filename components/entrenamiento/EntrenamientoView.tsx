@@ -8,7 +8,6 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { createClient } from '@/lib/supabase/client'
 import { formatNumber, lastNDates } from '@/lib/utils'
 import {
-  GRUPOS_MUSCULARES,
   type Ejercicio,
   type EntrenamientoRegistro,
   type NutricionComida,
@@ -21,6 +20,7 @@ import { XP_TABLE } from '@/lib/gamification'
 import { otorgarXP } from '@/lib/xp-client'
 import RutinasView from './RutinasView'
 import PlanEntrenamientoView from './PlanEntrenamientoView'
+import ModalNuevoEjercicio from './ModalNuevoEjercicio'
 
 const COLORES = ['#2f6bff', '#60a5fa', '#93c5fd', '#f59e0b', '#94a3b8', '#38bdf8', '#a78bfa', '#34d399']
 
@@ -104,9 +104,6 @@ export default function EntrenamientoView({
   const [reps, setReps] = useState('')
   const [series, setSeries] = useState('3')
 
-  const [nuevoEjercicioNombre, setNuevoEjercicioNombre] = useState('')
-  const [nuevoEjercicioGrupo, setNuevoEjercicioGrupo] = useState<Ejercicio['grupo_muscular']>('general')
-  const [nuevoEjercicioVideoUrl, setNuevoEjercicioVideoUrl] = useState('')
 
   const [comidaNombre, setComidaNombre] = useState('')
   const [comidaProt, setComidaProt] = useState('')
@@ -154,34 +151,10 @@ export default function EntrenamientoView({
     setModalSet(true)
   }
 
-  async function crearEjercicio() {
-    if (!nuevoEjercicioNombre.trim()) {
-      toast.error('Ponle un nombre al ejercicio')
-      return
-    }
-    setGuardando(true)
-    const { data, error } = await supabase
-      .from('ejercicios')
-      .insert({
-        usuario_id: usuarioId,
-        nombre: nuevoEjercicioNombre,
-        grupo_muscular: nuevoEjercicioGrupo,
-        video_url: nuevoEjercicioVideoUrl.trim() || null,
-      })
-      .select()
-      .single()
-    if (error) {
-      toast.error('No se pudo crear el ejercicio')
-      setGuardando(false)
-      return
-    }
-    setEjercicios((prev) => [...prev, data as Ejercicio].sort((a, b) => a.nombre.localeCompare(b.nombre)))
-    setEjercicioId(data.id)
-    setNuevoEjercicioNombre('')
-    setNuevoEjercicioVideoUrl('')
-    setGuardando(false)
+  function ejercicioCreado(ejercicio: Ejercicio) {
+    setEjercicios((prev) => [...prev, ejercicio].sort((a, b) => a.nombre.localeCompare(b.nombre)))
+    setEjercicioId(ejercicio.id)
     setModalEjercicio(false)
-    toast.success('Ejercicio creado')
   }
 
   async function guardarSet() {
@@ -354,7 +327,14 @@ export default function EntrenamientoView({
 
       {tab === 'entrenamiento' && (
         <div className="p-5 space-y-5">
-          <RutinasView rutinas={rutinas} setRutinas={setRutinas} ejercicios={ejercicios} usuarioId={usuarioId} perfil={perfil} />
+          <RutinasView
+            rutinas={rutinas}
+            setRutinas={setRutinas}
+            ejercicios={ejercicios}
+            setEjercicios={setEjercicios}
+            usuarioId={usuarioId}
+            perfil={perfil}
+          />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="card px-4 py-3">
@@ -586,59 +566,7 @@ export default function EntrenamientoView({
       )}
 
       {modalEjercicio && (
-        <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h2 className="font-medium text-sm">Nuevo ejercicio</h2>
-              <button onClick={() => setModalEjercicio(false)} className="text-muted hover:text-foreground">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-muted mb-1">Nombre</label>
-                <input
-                  className="input-tl"
-                  value={nuevoEjercicioNombre}
-                  onChange={(e) => setNuevoEjercicioNombre(e.target.value)}
-                  placeholder="Ej. Prensa de banca"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted mb-1">Grupo muscular</label>
-                <select
-                  className="input-tl"
-                  value={nuevoEjercicioGrupo}
-                  onChange={(e) => setNuevoEjercicioGrupo(e.target.value as Ejercicio['grupo_muscular'])}
-                >
-                  {GRUPOS_MUSCULARES.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted mb-1">Link de tecnica (opcional)</label>
-                <input
-                  className="input-tl"
-                  value={nuevoEjercicioVideoUrl}
-                  onChange={(e) => setNuevoEjercicioVideoUrl(e.target.value)}
-                  placeholder="Ej. link de YouTube mostrando como se hace"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-5 py-4 border-t border-border">
-              <button onClick={() => setModalEjercicio(false)} className="btn-tl">
-                Cancelar
-              </button>
-              <button onClick={crearEjercicio} disabled={guardando} className="btn-tl-blue">
-                {guardando ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                Crear
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalNuevoEjercicio usuarioId={usuarioId} onCerrar={() => setModalEjercicio(false)} onCreado={ejercicioCreado} />
       )}
 
       {modalComida && (

@@ -75,8 +75,12 @@ export type GrupoMuscular =
   | 'hombros'
   | 'triceps'
   | 'biceps'
+  | 'antebrazos'
   | 'piernas'
+  | 'gluteos'
+  | 'gemelos'
   | 'core'
+  | 'cardio'
   | 'general'
 
 export const GRUPOS_MUSCULARES: GrupoMuscular[] = [
@@ -85,8 +89,12 @@ export const GRUPOS_MUSCULARES: GrupoMuscular[] = [
   'hombros',
   'triceps',
   'biceps',
+  'antebrazos',
   'piernas',
+  'gluteos',
+  'gemelos',
   'core',
+  'cardio',
   'general',
 ]
 

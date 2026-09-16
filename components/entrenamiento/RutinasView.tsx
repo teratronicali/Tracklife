@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
 import type { Ejercicio, Perfil, RutinaConEjercicios, RutinaEjercicio, TipoRutina } from '@/lib/types'
 import SesionActiva from './SesionActiva'
+import ModalNuevoEjercicio from './ModalNuevoEjercicio'
 
 const TIPOS_ACTIVIDAD_CARDIO = [
   'running',
@@ -65,12 +66,14 @@ export default function RutinasView({
   rutinas,
   setRutinas,
   ejercicios,
+  setEjercicios,
   usuarioId,
   perfil,
 }: {
   rutinas: RutinaConEjercicios[]
   setRutinas: Dispatch<SetStateAction<RutinaConEjercicios[]>>
   ejercicios: Ejercicio[]
+  setEjercicios: Dispatch<SetStateAction<Ejercicio[]>>
   usuarioId: string
   perfil: Perfil
 }) {
@@ -83,6 +86,13 @@ export default function RutinasView({
   const [items, setItems] = useState<ItemForm[]>([])
   const [ejercicioNuevo, setEjercicioNuevo] = useState(ejercicios[0]?.id ?? '')
   const [sesionRutina, setSesionRutina] = useState<RutinaConEjercicios | null>(null)
+  const [modalNuevoEjercicio, setModalNuevoEjercicio] = useState(false)
+
+  function ejercicioCreado(ejercicio: Ejercicio) {
+    setEjercicios((prev) => [...prev, ejercicio].sort((a, b) => a.nombre.localeCompare(b.nombre)))
+    setEjercicioNuevo(ejercicio.id)
+    setModalNuevoEjercicio(false)
+  }
 
   function nombreEjercicio(id: string) {
     return ejercicios.find((e) => e.id === id)?.nombre ?? '—'
@@ -239,6 +249,12 @@ export default function RutinasView({
 
   return (
     <div className="space-y-3">
+      <datalist id="tipos-actividad-cardio">
+        {TIPOS_ACTIVIDAD_CARDIO.map((t) => (
+          <option key={t} value={t} />
+        ))}
+      </datalist>
+
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">Tus rutinas</h2>
         <button onClick={abrirNueva} className="btn-tl text-xs">
@@ -334,6 +350,9 @@ export default function RutinasView({
                   <Plus size={14} /> Agregar
                 </button>
               </div>
+              <button onClick={() => setModalNuevoEjercicio(true)} className="text-[11px] text-muted underline -mt-2 w-fit">
+                ¿No esta en la lista? Crea cualquier ejercicio nuevo
+              </button>
 
               <div className="space-y-2">
                 {items.map((it, idx) => (
@@ -396,13 +415,13 @@ export default function RutinasView({
                         <div className="grid grid-cols-3 gap-2">
                           <div>
                             <label className="block text-[10px] text-muted mb-0.5">Actividad</label>
-                            <select className="input-tl py-1 text-xs" value={it.tipo_actividad} onChange={(e) => actualizarItem(idx, 'tipo_actividad', e.target.value)}>
-                              {TIPOS_ACTIVIDAD_CARDIO.map((t) => (
-                                <option key={t} value={t}>
-                                  {t}
-                                </option>
-                              ))}
-                            </select>
+                            <input
+                              className="input-tl py-1 text-xs"
+                              list="tipos-actividad-cardio"
+                              value={it.tipo_actividad}
+                              placeholder="Cualquier actividad"
+                              onChange={(e) => actualizarItem(idx, 'tipo_actividad', e.target.value)}
+                            />
                           </div>
                           <div>
                             <label className="block text-[10px] text-muted mb-0.5">Km objetivo</label>
@@ -460,6 +479,10 @@ export default function RutinasView({
           perfil={perfil}
           onCerrar={() => setSesionRutina(null)}
         />
+      )}
+
+      {modalNuevoEjercicio && (
+        <ModalNuevoEjercicio usuarioId={usuarioId} onCerrar={() => setModalNuevoEjercicio(false)} onCreado={ejercicioCreado} />
       )}
     </div>
   )

@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Ejercicio, Perfil, RutinaConEjercicios } from '@/lib/types'
 import { XP_TABLE } from '@/lib/gamification'
 import { otorgarXP } from '@/lib/xp-client'
+import ModalNuevoEjercicio from './ModalNuevoEjercicio'
 
 interface SetEnCurso {
   reps: string
@@ -89,6 +90,8 @@ export default function SesionActiva({
   const [agregandoLink, setAgregandoLink] = useState(false)
   const [linkNuevo, setLinkNuevo] = useState('')
   const [guardandoLink, setGuardandoLink] = useState(false)
+  const [listaEjercicios, setListaEjercicios] = useState(ejerciciosDisponibles)
+  const [modalNuevoEjercicio, setModalNuevoEjercicio] = useState(false)
 
   const [ejercicios, setEjercicios] = useState<ExercicioSesion[]>(() =>
     rutina.ejercicios.map((re) => ({
@@ -249,6 +252,12 @@ export default function SesionActiva({
       prev.map((e, i) => (i !== activo ? e : { ...e, ejercicio: nuevo, previa: null }))
     )
     setPicadorAbierto(false)
+  }
+
+  function ejercicioCreadoEnSwap(nuevo: Ejercicio) {
+    setListaEjercicios((prev) => [...prev, nuevo].sort((a, b) => a.nombre.localeCompare(b.nombre)))
+    setModalNuevoEjercicio(false)
+    cambiarEjercicio(nuevo)
   }
 
   async function guardarLinkTecnica() {
@@ -595,7 +604,14 @@ export default function SesionActiva({
               </button>
             </div>
             <div className="p-2">
-              {ejerciciosDisponibles.map((ej) => (
+              <button
+                onClick={() => setModalNuevoEjercicio(true)}
+                className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-surface-2 text-sm font-medium"
+                style={{ color: 'var(--tl-blue)' }}
+              >
+                + Crear ejercicio nuevo
+              </button>
+              {listaEjercicios.map((ej) => (
                 <button
                   key={ej.id}
                   onClick={() => cambiarEjercicio(ej)}
@@ -640,6 +656,10 @@ export default function SesionActiva({
             )}
           </div>
         </div>
+      )}
+
+      {modalNuevoEjercicio && (
+        <ModalNuevoEjercicio usuarioId={usuarioId} onCerrar={() => setModalNuevoEjercicio(false)} onCreado={ejercicioCreadoEnSwap} />
       )}
     </div>
   )

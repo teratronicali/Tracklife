@@ -36,13 +36,15 @@ pero con identidad propia en azul/negro/blanco.
     el entrenamiento perdido (**compensacion**) — sin tener que rehacer el plan a mano. Tambien
     puedes avisar de una vez con "No voy a entrenar hoy" sin esperar al dia siguiente.
   - **Entrenamientos**: arma **rutinas** de gimnasio (ejercicios + series/reps/peso/descanso
-    objetivo) o de **cardio/deporte** (running, ciclismo, natacion... con distancia/duracion
-    objetivo) e iniciala para una **sesion interactiva**: vas marcando cada serie (peso, reps,
-    RIR) o actividad (distancia, duracion) con timer de descanso automatico, navegacion entre
-    ejercicios y opcion de swap — parecido a apps como Symmetry/Hevy. Cada ejercicio puede
-    llevar un **link de tecnica** (video) opcional que se puede ver o agregar sin salir de la
-    sesion. Tambien registro rapido de series sueltas, volumen semanal y distribucion por
-    grupo muscular.
+    objetivo) o de **cardio/deporte** (cualquier actividad — running, ciclismo, natacion,
+    escalada, lo que sea, con distancia/duracion objetivo) e iniciala para una **sesion
+    interactiva**: vas marcando cada serie (peso, reps, RIR) o actividad (distancia, duracion)
+    con timer de descanso automatico, navegacion entre ejercicios y opcion de swap — parecido
+    a apps como Symmetry/Hevy. Los ejercicios se pueden crear **sin ningun limite de nombre o
+    grupo muscular** desde cualquier parte del flujo (armando una rutina, cambiando de ejercicio
+    a mitad de sesion, o desde el registro rapido), y cada uno puede llevar un **link de
+    tecnica** (video) opcional que se ve o se agrega sin salir de la sesion. Tambien registro
+    rapido de series sueltas, volumen semanal y distribucion por grupo muscular.
   - **Dieta**: macros (proteina/carbo/grasa) y kcal del dia.
 - **Metas** — de cualquier area (financiera, deportiva, familiar, salud, profesional o
   personal), con imagen, aportes y barra de progreso.
@@ -92,7 +94,8 @@ Todo esto vive en `lib/gamification.ts` (tabla de XP, rangos, formula de nivel) 
 2. En el SQL Editor de ese proyecto, ejecuta en orden el contenido de
    `supabase/migrations/001_init.sql`, `002_onboarding_strava.sql`, `003_planes_pagos.sql`,
    `004_racha_bonus.sql`, `005_rutinas_sesiones.sql`, `006_planes_entrenamiento.sql`,
-   `007_plan_dia_estados.sql`, `008_tipos_meta.sql` y `009_ejercicio_video.sql`
+   `007_plan_dia_estados.sql`, `008_tipos_meta.sql`, `009_ejercicio_video.sql` y
+   `010_grupos_musculares.sql`
    (crea todas las tablas, RLS y funciones necesarias).
 3. Copia `.env.local.example` a `.env.local` y completa con los datos de tu proyecto
    (Settings → API en el dashboard de Supabase):
