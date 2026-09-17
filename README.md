@@ -35,6 +35,16 @@ pero con identidad propia en azul/negro/blanco.
     busca automaticamente el proximo dia de descanso libre de esa misma semana para mover ahi
     el entrenamiento perdido (**compensacion**) — sin tener que rehacer el plan a mano. Tambien
     puedes avisar de una vez con "No voy a entrenar hoy" sin esperar al dia siguiente.
+    Hay una tercera opcion, **Running**, que genera un plan de carrera periodizado de verdad:
+    elige nivel (incluye **nunca he corrido**, con progresion caminar/correr antes del trote
+    continuo) y objetivo (5K, 10K, 21K, maraton o "general" sin distancia fija); si le pones la
+    **fecha de la carrera**, el plan dura exactamente las semanas que faltan, y si no, usa una
+    duracion recomendada segun nivel/distancia. El plan se organiza en fases **base → build →
+    peak → taper** con el fondo largo subiendo progresivamente (con semanas de descarga cada 4
+    semanas), series/tempo en fase de calidad, **fortalecimiento 2x/semana** (economia de
+    carrera + prevencion de lesiones por sobreuso) y **pliometria 1x/semana** desde build solo
+    para nivel intermedio/avanzado — siempre respetando al menos un dia de descanso completo.
+    El calendario muestra "Semana X de Y" y la cuenta regresiva a la fecha objetivo.
   - **Entrenamientos**: arma **rutinas** de gimnasio (ejercicios + series/reps/peso/descanso
     objetivo) o de **cardio/deporte** (cualquier actividad — running, ciclismo, natacion,
     escalada, lo que sea, con distancia/duracion objetivo) e iniciala para una **sesion
@@ -96,8 +106,8 @@ Todo esto vive en `lib/gamification.ts` (tabla de XP, rangos, formula de nivel) 
 2. En el SQL Editor de ese proyecto, ejecuta en orden el contenido de
    `supabase/migrations/001_init.sql`, `002_onboarding_strava.sql`, `003_planes_pagos.sql`,
    `004_racha_bonus.sql`, `005_rutinas_sesiones.sql`, `006_planes_entrenamiento.sql`,
-   `007_plan_dia_estados.sql`, `008_tipos_meta.sql`, `009_ejercicio_video.sql` y
-   `010_grupos_musculares.sql`
+   `007_plan_dia_estados.sql`, `008_tipos_meta.sql`, `009_ejercicio_video.sql`,
+   `010_grupos_musculares.sql` y `011_plan_multisemana_running.sql`
    (crea todas las tablas, RLS y funciones necesarias).
 3. Copia `.env.local.example` a `.env.local` y completa con los datos de tu proyecto
    (Settings → API en el dashboard de Supabase):
