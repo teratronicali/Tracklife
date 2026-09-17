@@ -180,6 +180,9 @@ export interface PlanEntrenamiento {
   objetivo: string
   nivel: NivelEntrenamiento
   activo: boolean
+  duracion_semanas: number | null
+  fecha_inicio: string
+  fecha_objetivo: string | null
   created_at: string
 }
 
@@ -187,6 +190,7 @@ export interface PlanDia {
   id: string
   usuario_id: string
   plan_id: string
+  semana: number
   dia_semana: number
   rutina_id: string | null
   descanso: boolean

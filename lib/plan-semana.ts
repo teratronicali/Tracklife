@@ -1,5 +1,5 @@
 import type { createClient } from '@/lib/supabase/client'
-import type { PlanConDias, PlanDia, PlanDiaEstado, RutinaConEjercicios } from '@/lib/types'
+import type { PlanConDias, PlanDia, PlanDiaEstado, PlanEntrenamiento, RutinaConEjercicios } from '@/lib/types'
 import { DIAS_SEMANA } from '@/lib/plantillas-entrenamiento'
 
 type SupabaseClient = ReturnType<typeof createClient>
@@ -30,6 +30,30 @@ export function fechasSemana(inicioLunes: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => sumarDias(inicioLunes, i))
 }
 
+// Numero de semana del programa (1-indexado) al que pertenece una fecha.
+// Si el plan no tiene duracion (rolling, como un plan de gym o cardio suelto)
+// siempre es la semana 1 — la misma plantilla se repite para siempre. Si el
+// plan es periodizado (running con objetivo), se calcula segun cuantas
+// semanas de calendario pasaron desde fecha_inicio, y se limita a
+// duracion_semanas (una vez terminado el plan, se queda en la ultima semana).
+export function calcularSemanaPrograma(plan: PlanEntrenamiento, fecha: Date): number {
+  if (!plan.duracion_semanas) return 1
+  const inicio = inicioSemana(new Date(`${plan.fecha_inicio}T00:00:00`))
+  const semanaFecha = inicioSemana(fecha)
+  const diffSemanas = Math.round((semanaFecha.getTime() - inicio.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1
+  return Math.min(Math.max(diffSemanas, 1), plan.duracion_semanas)
+}
+
+export function planFinalizado(plan: PlanEntrenamiento, hoy: Date): boolean {
+  if (!plan.duracion_semanas) return false
+  return calcularSemanaPrograma(plan, hoy) >= plan.duracion_semanas && fechaISO(hoy) > fechaFinPlan(plan)
+}
+
+function fechaFinPlan(plan: PlanEntrenamiento): string {
+  const inicio = inicioSemana(new Date(`${plan.fecha_inicio}T00:00:00`))
+  return fechaISO(sumarDias(inicio, (plan.duracion_semanas ?? 1) * 7 - 1))
+}
+
 export interface DiaCalendario {
   fecha: string
   diaSemana: number
@@ -55,7 +79,8 @@ export function construirCalendarioSemana(
   return fechasSemana(inicioLunes).map((fecha) => {
     const fechaStr = fechaISO(fecha)
     const diaSemana = diaSemanaISO(fecha)
-    const plantilla = plan.dias.find((d) => d.dia_semana === diaSemana)
+    const semanaPrograma = calcularSemanaPrograma(plan, fecha)
+    const plantilla = plan.dias.find((d) => d.dia_semana === diaSemana && d.semana === semanaPrograma)
     const estado = estadosPorFecha.get(fechaStr) ?? null
 
     let rutina: RutinaConEjercicios | null = null
@@ -142,7 +167,8 @@ export async function revisarDiasPendientes(
     const yaResuelto = estadosPorFecha.get(fechaStr)
     if (yaResuelto && yaResuelto.estado !== 'pendiente') continue
 
-    const plantilla: PlanDia | undefined = plan.dias.find((d) => d.dia_semana === diaSemana)
+    const semanaPrograma = calcularSemanaPrograma(plan, new Date(`${fechaStr}T00:00:00`))
+    const plantilla: PlanDia | undefined = plan.dias.find((d) => d.dia_semana === diaSemana && d.semana === semanaPrograma)
     if (!plantilla || plantilla.descanso || !plantilla.rutina_id) continue
 
     if (sesionesPorClave.has(`${fechaStr}|${plantilla.rutina_id}`)) {
@@ -212,7 +238,8 @@ export async function marcarIncumplidoYCompensar(
     const candidatoISO = fechaISO(candidato)
     if (candidatoISO >= hoyISO) {
       const diaSemana = diaSemanaISO(candidato)
-      const plantilla = plan.dias.find((d) => d.dia_semana === diaSemana)
+      const semanaCandidato = calcularSemanaPrograma(plan, candidato)
+      const plantilla = plan.dias.find((d) => d.dia_semana === diaSemana && d.semana === semanaCandidato)
       const libre = plantilla?.descanso && !estadosPorFecha.has(candidatoISO)
       if (libre) {
         await supabase

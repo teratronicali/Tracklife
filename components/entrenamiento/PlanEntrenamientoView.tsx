@@ -19,17 +19,28 @@ import {
   type PlanPlantilla,
 } from '@/lib/plantillas-entrenamiento'
 import {
+  calcularSemanaPrograma,
   construirCalendarioSemana,
   fechaISO,
   fetchEstadosPlan,
   inicioSemana,
   marcarCumplidoRetroactivo,
   marcarIncumplidoYCompensar,
+  planFinalizado,
   revisarDiasPendientes,
   sumarDias,
   type DiaCalendario,
   type DiaPorRevisar,
 } from '@/lib/plan-semana'
+import {
+  NIVELES_RUNNING,
+  OBJETIVOS_RUNNING,
+  generarPlanRunning,
+  resumenPlanRunning,
+  semanasHastaFecha,
+  type NivelRunning,
+  type ObjetivoRunning,
+} from '@/lib/plan-running'
 import SesionActiva from './SesionActiva'
 
 function formatoFecha(fecha: string) {
@@ -55,7 +66,7 @@ export default function PlanEntrenamientoView({
   const router = useRouter()
   const [plan, setPlan] = useState(planInicial)
   const [modal, setModal] = useState(false)
-  const [modo, setModo] = useState<'plantillas' | 'personalizado'>('plantillas')
+  const [modo, setModo] = useState<'plantillas' | 'personalizado' | 'running'>('plantillas')
   const [filtroObjetivo, setFiltroObjetivo] = useState<ObjetivoEntrenamiento | 'todos'>('todos')
   const [filtroNivel, setFiltroNivel] = useState<NivelEntrenamiento | 'todos'>('todos')
   const [aplicando, setAplicando] = useState<string | null>(null)
@@ -64,6 +75,10 @@ export default function PlanEntrenamientoView({
   const [nivelPersonalizado, setNivelPersonalizado] = useState<NivelEntrenamiento>('principiante')
   const [diasPersonalizado, setDiasPersonalizado] = useState<(string | null)[]>(Array(7).fill(null))
   const [sesionRutina, setSesionRutina] = useState<RutinaConEjercicios | null>(null)
+
+  const [nivelRunning, setNivelRunning] = useState<NivelRunning>('principiante')
+  const [objetivoRunning, setObjetivoRunning] = useState<ObjetivoRunning>('5k')
+  const [fechaCarreraRunning, setFechaCarreraRunning] = useState('')
 
   const [estadosSemana, setEstadosSemana] = useState<PlanDiaEstado[]>([])
   const [porRevisar, setPorRevisar] = useState<DiaPorRevisar[]>([])
@@ -119,6 +134,31 @@ export default function PlanEntrenamientoView({
       router.refresh()
     } catch {
       toast.error('No se pudo cargar el plan')
+    } finally {
+      setAplicando(null)
+    }
+  }
+
+  async function generarRunning() {
+    setAplicando('running')
+    try {
+      const nuevoPlan = await generarPlanRunning(supabase, usuarioId, {
+        nivel: nivelRunning,
+        objetivo: objetivoRunning,
+        fechaObjetivo: fechaCarreraRunning || null,
+      })
+      setPlan(nuevoPlan)
+      const rutinasNuevas = nuevoPlan.dias.map((d) => d.rutina).filter((r): r is RutinaConEjercicios => Boolean(r))
+      setRutinasDisponibles((prev) => {
+        const idsNuevos = new Set(rutinasNuevas.map((r) => r.id))
+        return [...rutinasNuevas, ...prev.filter((r) => !idsNuevos.has(r.id))]
+      })
+      setModal(false)
+      toast.success(`Plan de running creado: ${nuevoPlan.nombre}`)
+      router.refresh()
+    } catch (err) {
+      console.error('Error generando plan de running:', err)
+      toast.error('No se pudo generar el plan de running')
     } finally {
       setAplicando(null)
     }
@@ -288,10 +328,23 @@ export default function PlanEntrenamientoView({
             <span className="pill">{OBJETIVOS_ENTRENAMIENTO.find((o) => o.id === plan.objetivo)?.label ?? plan.objetivo}</span>
             <span className="pill capitalize">{plan.nivel}</span>
             <span className="text-xs text-muted">{plan.nombre}</span>
+            {plan.duracion_semanas && (
+              <span className="pill" style={{ color: 'var(--tl-blue)' }}>
+                Semana {Math.min(calcularSemanaPrograma(plan, hoy), plan.duracion_semanas)} de {plan.duracion_semanas}
+              </span>
+            )}
+            {plan.fecha_objetivo && (
+              <span className="text-xs text-muted">
+                {planFinalizado(plan, hoy)
+                  ? '¡Plan completado!'
+                  : `Faltan ${Math.max(0, semanasHastaFecha(plan.fecha_objetivo))} semanas para tu carrera (${formatoFecha(plan.fecha_objetivo)})`}
+              </span>
+            )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
             {calendario.map((dia) => {
-              const plantilla = plan.dias.find((d) => d.dia_semana === dia.diaSemana)
+              const semanaDia = calcularSemanaPrograma(plan, new Date(`${dia.fecha}T00:00:00`))
+              const plantilla = plan.dias.find((d) => d.dia_semana === dia.diaSemana && d.semana === semanaDia)
               const badge = dia.estado && dia.estado.estado !== 'pendiente' ? ESTADO_BADGE[dia.estado.estado] : null
               return (
                 <div
@@ -343,7 +396,7 @@ export default function PlanEntrenamientoView({
                         No voy a entrenar hoy
                       </button>
                     )}
-                    {!dia.esPasado && !dia.esCompensacion && (
+                    {!dia.esPasado && !dia.esCompensacion && !plan.duracion_semanas && (
                       <select
                         className="input-tl text-[10px] py-1"
                         value={plantilla?.rutina_id ?? ''}
@@ -391,11 +444,62 @@ export default function PlanEntrenamientoView({
                 >
                   Personalizado
                 </button>
+                <button
+                  onClick={() => setModo('running')}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium"
+                  style={modo === 'running' ? { background: 'var(--tl-blue)', color: 'white' } : { color: 'var(--tl-muted)' }}
+                >
+                  Running
+                </button>
               </div>
             </div>
 
             <div className="p-5 overflow-y-auto space-y-3">
-              {modo === 'plantillas' ? (
+              {modo === 'running' ? (
+                <div className="space-y-4 max-w-sm">
+                  <p className="text-xs text-muted">
+                    Plan periodizado de verdad: fuerza para corredores 2x/semana, pliometria cuando aplica, progresion del fondo
+                    largo con semanas de descarga, y un taper final antes de la carrera.
+                  </p>
+                  <div>
+                    <label className="block text-xs font-medium text-muted mb-1">Nivel</label>
+                    <select className="input-tl" value={nivelRunning} onChange={(e) => setNivelRunning(e.target.value as NivelRunning)}>
+                      {NIVELES_RUNNING.map((n) => (
+                        <option key={n.id} value={n.id}>
+                          {n.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-muted mb-1">Objetivo</label>
+                    <select className="input-tl" value={objetivoRunning} onChange={(e) => setObjetivoRunning(e.target.value as ObjetivoRunning)}>
+                      {OBJETIVOS_RUNNING.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {objetivoRunning !== 'general' && (
+                    <div>
+                      <label className="block text-xs font-medium text-muted mb-1">Fecha de tu carrera (opcional)</label>
+                      <input
+                        type="date"
+                        className="input-tl"
+                        value={fechaCarreraRunning}
+                        min={fechaISO(new Date())}
+                        onChange={(e) => setFechaCarreraRunning(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  <p className="text-[11px] text-muted">{resumenPlanRunning({ nivel: nivelRunning, objetivo: objetivoRunning, fechaObjetivo: fechaCarreraRunning || null })}</p>
+                  <button onClick={generarRunning} disabled={aplicando === 'running'} className="btn-tl-blue text-xs">
+                    {aplicando === 'running' ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                    Generar plan de running
+                  </button>
+                </div>
+              ) : modo === 'plantillas' ? (
                 <>
                   <div className="flex flex-wrap gap-2">
                     <select className="input-tl text-xs w-auto" value={filtroObjetivo} onChange={(e) => setFiltroObjetivo(e.target.value as ObjetivoEntrenamiento | 'todos')}>
