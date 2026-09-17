@@ -122,9 +122,9 @@ export default function LandingPage() {
 
       {/* NAV */}
       <header className="max-w-5xl mx-auto px-5 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <LogoMark size={28} />
-          <Wordmark className="font-semibold text-sm" />
+        <div className="flex items-center gap-2.5">
+          <LogoMark size={40} />
+          <Wordmark className="font-semibold text-xl" />
         </div>
         <div className="flex items-center gap-2">
           <Link href="/login" className="btn-tl text-xs">
