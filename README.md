@@ -86,6 +86,15 @@ pero con identidad propia en azul/negro/blanco.
   automaticamente: running, ciclismo, natacion, etc.).
 - **Precio / Plan** — plan gratis con limites (3 habitos, 2 metas, 5 tareas) y **Acceso Vitalicio**
   (pago unico via Stripe) que los quita para siempre. Los limites se aplican al crear cada recurso.
+- **Asistente de IA** — boton flotante (visible en toda la app) con un chat: le escribes en
+  lenguaje natural ("gaste 85 en el restaurante", "hice press banca 80kg, 10 reps", "mañana
+  llamar a Carlos") y registra el gasto/ingreso, entrenamiento, tarea, meta o habito por ti,
+  usando la herramienta correcta segun lo que dijiste — nunca toca la base de datos directo,
+  solo a traves de mutaciones controladas (ver `lib/asistente-tools.ts` y
+  `lib/asistente-ejecutar.ts`). Tambien responde preguntas de progreso ("como voy este mes?").
+  Corre con Claude (Anthropic) del lado del servidor (`app/api/asistente/route.ts`) — requiere
+  `ANTHROPIC_API_KEY` en el `.env.local` (ver abajo); sin esa key el boton avisa que falta
+  configurarla en vez de fallar en silencio.
 
 ## Gamificacion
 
@@ -190,6 +199,21 @@ ajustalo a lo que quieras cobrar) y `PRECIO.display` (el texto que se muestra en
    ```
 5. Reinicia el servidor. El boton "Comprar Acceso Vitalicio" en `/precio` ya podra procesar pagos
    reales; el webhook activa `plan = 'vitalicio'` en el perfil del usuario automaticamente.
+
+### Activar el Asistente de IA (opcional)
+
+1. Crea una API key en <https://console.anthropic.com/settings/keys>.
+2. Agregala a tu `.env.local`:
+   ```
+   ANTHROPIC_API_KEY=...
+   ```
+3. Reinicia el servidor. El boton flotante del asistente ya podra registrar cosas por ti.
+
+Usa el modelo `claude-opus-5` por defecto (el mas capaz). Como esta tarea es principalmente
+extraccion de datos simple (sacar monto/categoria/fecha de una frase), si el costo por uso te
+importa mas que la precision maxima, puedes cambiar `MODELO` en `app/api/asistente/route.ts` a
+`claude-sonnet-5` o `claude-haiku-4-5` (mucho mas barato) — para este tipo de tarea estructurada
+la diferencia de calidad suele ser minima.
 
 En desarrollo local, Stripe no puede llegarte el webhook directamente — usa
 [`stripe listen --forward-to localhost:3000/api/stripe/webhook`](https://docs.stripe.com/stripe-cli)
