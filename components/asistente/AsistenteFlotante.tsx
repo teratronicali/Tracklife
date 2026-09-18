@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bot, X, Send, Loader2, Check } from 'lucide-react'
+import { Bot, X, Send, Loader2, Check, Mic } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useReconocimientoVoz } from '@/lib/useReconocimientoVoz'
 
 interface MensajeChat {
   rol: 'user' | 'assistant'
@@ -19,13 +20,20 @@ export default function AsistenteFlotante() {
   const [input, setInput] = useState('')
   const [enviando, setEnviando] = useState(false)
   const finRef = useRef<HTMLDivElement>(null)
+  const {
+    escuchando,
+    soportado: soportaVoz,
+    transcripcionParcial,
+    iniciar: iniciarVoz,
+    detener: detenerVoz,
+  } = useReconocimientoVoz((texto) => enviar(texto))
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensajes, abierto])
 
-  async function enviar() {
-    const texto = input.trim()
+  async function enviar(textoOverride?: string) {
+    const texto = (textoOverride ?? input).trim()
     if (!texto || enviando) return
     setMensajes((prev) => [...prev, { rol: 'user', texto }])
     setInput('')
@@ -115,16 +123,43 @@ export default function AsistenteFlotante() {
               <div ref={finRef} />
             </div>
 
+            {escuchando && (
+              <div className="px-3 pt-2">
+                <div
+                  className="flex items-center gap-1.5 text-[11px] rounded-lg px-2.5 py-1.5"
+                  style={{ background: 'rgba(239,68,68,0.12)', color: 'var(--tl-red)' }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: 'var(--tl-red)' }} />
+                  {transcripcionParcial || 'Escuchando...'}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-2 p-3 border-t border-border">
+              {soportaVoz && (
+                <button
+                  onClick={() => (escuchando ? detenerVoz() : iniciarVoz())}
+                  disabled={enviando}
+                  className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+                  style={
+                    escuchando
+                      ? { background: 'var(--tl-red)', color: 'white' }
+                      : { background: 'var(--tl-surface-2)', color: 'var(--tl-muted)' }
+                  }
+                  title={escuchando ? 'Detener' : 'Registrar por voz'}
+                >
+                  <Mic size={16} className={escuchando ? 'animate-pulse' : undefined} />
+                </button>
+              )}
               <input
                 className="input-tl text-xs flex-1"
-                placeholder="Escribe algo..."
+                placeholder={escuchando ? 'Escuchando...' : 'Escribe algo...'}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && enviar()}
-                disabled={enviando}
+                disabled={enviando || escuchando}
               />
-              <button onClick={enviar} disabled={enviando || !input.trim()} className="btn-tl-blue px-3 py-2">
+              <button onClick={() => enviar()} disabled={enviando || !input.trim()} className="btn-tl-blue px-3 py-2">
                 <Send size={15} />
               </button>
             </div>

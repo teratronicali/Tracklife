@@ -94,7 +94,12 @@ pero con identidad propia en azul/negro/blanco.
   `lib/asistente-ejecutar.ts`). Tambien responde preguntas de progreso ("como voy este mes?").
   Corre con Claude (Anthropic) del lado del servidor (`app/api/asistente/route.ts`) — requiere
   `ANTHROPIC_API_KEY` en el `.env.local` (ver abajo); sin esa key el boton avisa que falta
-  configurarla en vez de fallar en silencio.
+  configurarla en vez de fallar en silencio. Tambien se puede **registrar por voz**: el boton
+  de microfono usa la Web Speech API del navegador (nativa, sin costo ni backend adicional) para
+  transcribir en vivo lo que dices y lo envia solo al terminar — ideal para registrar un
+  entrenamiento sin soltar las pesas. Solo funciona en navegadores con soporte (Chrome/Edge
+  bien, Safari de escritorio no la tiene, iOS Safari parcial); el boton se oculta solo si el
+  navegador no la soporta.
 
 ## Gamificacion
 
