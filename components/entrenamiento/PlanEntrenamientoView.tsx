@@ -950,6 +950,14 @@ export default function PlanEntrenamientoView({
                     </select>
                   </div>
 
+                  <p className="text-[11px] text-muted">
+                    ¿Buscas un plan de running (5K, 10K, media maraton, maraton)? Usa la pestana{' '}
+                    <button onClick={() => setModo('running')} className="underline font-medium" style={{ color: 'var(--tl-blue)' }}>
+                      Running
+                    </button>{' '}
+                    — arma un plan a la medida con progresion real y ritmos calculados de un test inicial, en vez de una plantilla generica.
+                  </p>
+
                   <div className="space-y-2">
                     {plantillasFiltradas.map((p) => (
                       <div key={p.id} className="card p-3 flex flex-col gap-2">
@@ -981,7 +989,11 @@ export default function PlanEntrenamientoView({
                         </div>
                       </div>
                     ))}
-                    {plantillasFiltradas.length === 0 && <p className="text-xs text-muted text-center py-4">No hay plantillas con esos filtros</p>}
+                    {plantillasFiltradas.length === 0 && (
+                      <p className="text-xs text-muted text-center py-4">
+                        {filtroObjetivo === 'resistencia' ? 'El running tiene su propia pestana arriba, no plantillas aqui' : 'No hay plantillas con esos filtros'}
+                      </p>
+                    )}
                   </div>
                 </>
               ) : (

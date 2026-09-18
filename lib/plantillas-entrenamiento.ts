@@ -527,55 +527,12 @@ export const PLANES_PLANTILLA: PlanPlantilla[] = [
     ],
   },
 
-  // ============================= RESISTENCIA / RUNNING =============================
-  {
-    id: 'resistencia-principiante',
-    nombre: 'Correr 5K desde Cero',
-    objetivo: 'resistencia',
-    nivel: 'principiante',
-    descripcion: 'Metodo caminar-trotar progresivo para llegar a correr 5K sin parar en pocas semanas.',
-    dias: [
-      { dia_semana: 0, nombreRutina: 'Trote suave', cardio: { nombre: 'Caminata + trote', tipo_actividad: 'running', duracion_min: 20, notas: 'Alterna 2 min trote suave / 2 min caminata' } },
-      { dia_semana: 1 },
-      { dia_semana: 2, nombreRutina: 'Trote suave', cardio: { nombre: 'Caminata + trote', tipo_actividad: 'running', duracion_min: 25, notas: 'Alterna 3 min trote suave / 1 min caminata' } },
-      { dia_semana: 3 },
-      { dia_semana: 4 },
-      { dia_semana: 5, nombreRutina: 'Trote continuo', cardio: { nombre: 'Trote continuo', tipo_actividad: 'running', distancia_km: 5, duracion_min: 30, notas: 'Ritmo comodo, sin parar' } },
-      { dia_semana: 6 },
-    ],
-  },
-  {
-    id: 'resistencia-intermedio',
-    nombre: 'Mejorar tu 10K',
-    objetivo: 'resistencia',
-    nivel: 'intermedio',
-    descripcion: '4 dias de carrera combinando series, tempo y fondo para bajar tu marca en 10K.',
-    dias: [
-      { dia_semana: 0, nombreRutina: 'Trote suave', cardio: { nombre: 'Trote suave', tipo_actividad: 'running', duracion_min: 40, notas: 'Ritmo comodo de recuperacion' } },
-      { dia_semana: 1, nombreRutina: 'Series', cardio: { nombre: 'Intervalos 6x400m', tipo_actividad: 'running', notas: '6 repeticiones de 400m fuertes, 90 seg trote suave entre series' } },
-      { dia_semana: 2 },
-      { dia_semana: 3, nombreRutina: 'Tempo run', cardio: { nombre: 'Ritmo tempo', tipo_actividad: 'running', duracion_min: 25, notas: 'Ritmo moderado-fuerte, sostenido' } },
-      { dia_semana: 4 },
-      { dia_semana: 5, nombreRutina: 'Fondo largo', cardio: { nombre: 'Carrera larga', tipo_actividad: 'running', duracion_min: 60, notas: 'Ritmo comodo y constante' } },
-      { dia_semana: 6 },
-    ],
-  },
-  {
-    id: 'resistencia-experto',
-    nombre: 'Preparacion Media Maraton',
-    objetivo: 'resistencia',
-    nivel: 'experto',
-    descripcion: '5 dias de carrera de alto volumen con series, tempo y fondo largo, para correr 21K.',
-    dias: [
-      { dia_semana: 0, nombreRutina: 'Regenerativo', cardio: { nombre: 'Trote regenerativo', tipo_actividad: 'running', duracion_min: 30, notas: 'Ritmo muy suave' } },
-      { dia_semana: 1, nombreRutina: 'Series', cardio: { nombre: 'Intervalos 8x600m', tipo_actividad: 'running', notas: '8 repeticiones de 600m a ritmo de 10K, 2 min trote suave entre series' } },
-      { dia_semana: 2, nombreRutina: 'Rodaje medio', cardio: { nombre: 'Rodaje', tipo_actividad: 'running', duracion_min: 50, notas: 'Ritmo comodo-moderado' } },
-      { dia_semana: 3 },
-      { dia_semana: 4, nombreRutina: 'Tempo run', cardio: { nombre: 'Ritmo tempo', tipo_actividad: 'running', duracion_min: 30, notas: 'Ritmo de carrera objetivo' } },
-      { dia_semana: 5 },
-      { dia_semana: 6, nombreRutina: 'Fondo largo', cardio: { nombre: 'Carrera larga', tipo_actividad: 'running', duracion_min: 90, notas: 'Ritmo comodo y constante, el pilar de la semana' } },
-    ],
-  },
+  // Nota: las plantillas de Resistencia/Running (5K, 10K, media maraton) se
+  // quitaron de aqui — quedaron reemplazadas por la pestana "Running" del
+  // selector de plan (lib/plan-running.ts), que arma un plan periodizado de
+  // verdad (fases base/build/peak/taper, progresion del fondo largo, fuerza
+  // y pliometria) con ritmos en min/km calculados de un test inicial, en vez
+  // de una sola plantilla generica que se repite igual todas las semanas.
 ]
 
 interface RutinaEjercicioInsert {
