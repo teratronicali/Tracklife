@@ -21,6 +21,7 @@ import { otorgarXP } from '@/lib/xp-client'
 import RutinasView from './RutinasView'
 import PlanEntrenamientoView from './PlanEntrenamientoView'
 import ModalNuevoEjercicio from './ModalNuevoEjercicio'
+import FraseMotivacional from './FraseMotivacional'
 
 const COLORES = ['#2f6bff', '#60a5fa', '#93c5fd', '#f59e0b', '#94a3b8', '#38bdf8', '#a78bfa', '#34d399']
 
@@ -310,6 +311,10 @@ export default function EntrenamientoView({
             <Utensils size={13} /> Dieta
           </button>
         </div>
+      </div>
+
+      <div className="px-6 pt-4">
+        <FraseMotivacional />
       </div>
 
       {tab === 'plan' && (

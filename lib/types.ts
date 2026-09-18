@@ -184,6 +184,7 @@ export interface PlanEntrenamiento {
   duracion_semanas: number | null
   fecha_inicio: string
   fecha_objetivo: string | null
+  nombre_carrera: string | null
   test_distancia_km: number | null
   test_tiempo_seg: number | null
   created_at: string

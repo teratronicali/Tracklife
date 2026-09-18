@@ -324,6 +324,7 @@ export interface OpcionesPlanRunning {
   nivel: NivelRunning
   objetivo: ObjetivoRunning
   fechaObjetivo: string | null
+  nombreCarrera?: string | null
   testInicial?: TestInicialRunning | null
 }
 
@@ -335,7 +336,7 @@ export interface OpcionesPlanRunning {
 // objetivo especifico (min/km) ademas de la distancia/duracion. Devuelve el
 // plan ya materializado con sus dias y rutinas.
 export async function generarPlanRunning(supabase: SupabaseClient, usuarioId: string, opciones: OpcionesPlanRunning): Promise<PlanConDias> {
-  const { nivel, objetivo, fechaObjetivo, testInicial } = opciones
+  const { nivel, objetivo, fechaObjetivo, nombreCarrera, testInicial } = opciones
   const esContinuo = objetivo === 'general'
   const totalSemanas = esContinuo ? 1 : calcularDuracionPlan(nivel, objetivo, fechaObjetivo)
   const fases = calcularFases(totalSemanas, objetivo)
@@ -478,6 +479,7 @@ export async function generarPlanRunning(supabase: SupabaseClient, usuarioId: st
       duracion_semanas: esContinuo ? null : totalSemanas,
       fecha_inicio: fechaISO(new Date()),
       fecha_objetivo: esContinuo ? null : fechaObjetivo,
+      nombre_carrera: esContinuo ? null : nombreCarrera?.trim() || null,
       test_distancia_km: testInicial?.distanciaKm ?? null,
       test_tiempo_seg: testInicial?.tiempoSeg ?? null,
     })

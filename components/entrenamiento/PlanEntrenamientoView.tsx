@@ -108,6 +108,7 @@ export default function PlanEntrenamientoView({
   const [nivelRunning, setNivelRunning] = useState<NivelRunning>('principiante')
   const [objetivoRunning, setObjetivoRunning] = useState<ObjetivoRunning>('5k')
   const [fechaCarreraRunning, setFechaCarreraRunning] = useState('')
+  const [nombreCarreraRunning, setNombreCarreraRunning] = useState('')
   const [omitirTest, setOmitirTest] = useState(false)
   const [testDistancia, setTestDistancia] = useState('3')
   const [testMin, setTestMin] = useState('')
@@ -228,6 +229,7 @@ export default function PlanEntrenamientoView({
         nivel: nivelRunning,
         objetivo: objetivoRunning,
         fechaObjetivo: fechaCarreraRunning || null,
+        nombreCarrera: nombreCarreraRunning || null,
         testInicial: testValido ? { distanciaKm: Number(testDistancia), tiempoSeg: testTiempoSegTotal } : null,
       })
       setPlan(nuevoPlan)
@@ -607,7 +609,7 @@ export default function PlanEntrenamientoView({
               <span className="text-xs text-muted">
                 {planFinalizado(plan, hoy)
                   ? '¡Plan completado!'
-                  : `Faltan ${Math.max(0, semanasHastaFecha(plan.fecha_objetivo))} semanas para tu carrera (${formatoFecha(plan.fecha_objetivo)})`}
+                  : `Faltan ${Math.max(0, semanasHastaFecha(plan.fecha_objetivo))} semanas para ${plan.nombre_carrera || 'tu carrera'} (${formatoFecha(plan.fecha_objetivo)})`}
               </span>
             )}
           </div>
@@ -854,15 +856,26 @@ export default function PlanEntrenamientoView({
                     </select>
                   </div>
                   {objetivoRunning !== 'general' && (
-                    <div>
-                      <label className="block text-xs font-medium text-muted mb-1">Fecha de tu carrera (opcional)</label>
-                      <input
-                        type="date"
-                        className="input-tl"
-                        value={fechaCarreraRunning}
-                        min={fechaISO(new Date())}
-                        onChange={(e) => setFechaCarreraRunning(e.target.value)}
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-muted mb-1">Nombre de tu carrera (opcional)</label>
+                        <input
+                          className="input-tl"
+                          value={nombreCarreraRunning}
+                          onChange={(e) => setNombreCarreraRunning(e.target.value)}
+                          placeholder="Ej. Media Maraton de Medellin"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-muted mb-1">Fecha de tu carrera (opcional)</label>
+                        <input
+                          type="date"
+                          className="input-tl"
+                          value={fechaCarreraRunning}
+                          min={fechaISO(new Date())}
+                          onChange={(e) => setFechaCarreraRunning(e.target.value)}
+                        />
+                      </div>
                     </div>
                   )}
 

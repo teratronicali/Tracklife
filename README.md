@@ -44,7 +44,8 @@ pero con identidad propia en azul/negro/blanco.
     semanas), series/tempo en fase de calidad, **fortalecimiento 2x/semana** (economia de
     carrera + prevencion de lesiones por sobreuso) y **pliometria 1x/semana** desde build solo
     para nivel intermedio/avanzado — siempre respetando al menos un dia de descanso completo.
-    El calendario muestra "Semana X de Y" y la cuenta regresiva a la fecha objetivo.
+    Tambien puedes ponerle **nombre a tu carrera** (ej. "Media Maraton de Medellin"): aparece
+    en el banner del plan junto a la cuenta regresiva. El calendario muestra "Semana X de Y".
     Antes de generarlo puedes hacer un **test inicial de ritmo** (corre una distancia conocida
     y anota tu tiempo): con eso se calculan tus zonas de ritmo (facil, umbral/tempo, series y
     ritmo objetivo de carrera segun la formula de Riegel) y cada sesion del plan queda con un
@@ -68,6 +69,10 @@ pero con identidad propia en azul/negro/blanco.
     para guiarse de un vistazo; si no tiene video, se ve un icono generico en su lugar. Tambien
     registro rapido de series sueltas, volumen semanal y distribucion por grupo muscular.
   - **Dieta**: macros (proteina/carbo/grasa) y kcal del dia.
+
+  Arriba de las tres pestanas hay una **frase motivacional** (mentalidad de disciplina tipo
+  Goggins/Arnold/Peterson — algunas reales, otras propias en el mismo espiritu) que cambia
+  cada dia, con boton para pedir otra cuando quieras.
 - **Metas** — de cualquier area (financiera, deportiva, familiar, salud, profesional o
   personal), con imagen, aportes y barra de progreso.
 - **Tareas** — kanban (Pendiente / En progreso / Hecho) con etiquetas y subtareas.
@@ -117,8 +122,8 @@ Todo esto vive en `lib/gamification.ts` (tabla de XP, rangos, formula de nivel) 
    `supabase/migrations/001_init.sql`, `002_onboarding_strava.sql`, `003_planes_pagos.sql`,
    `004_racha_bonus.sql`, `005_rutinas_sesiones.sql`, `006_planes_entrenamiento.sql`,
    `007_plan_dia_estados.sql`, `008_tipos_meta.sql`, `009_ejercicio_video.sql`,
-   `010_grupos_musculares.sql`, `011_plan_multisemana_running.sql` y
-   `012_plan_ritmos_edicion.sql`
+   `010_grupos_musculares.sql`, `011_plan_multisemana_running.sql`,
+   `012_plan_ritmos_edicion.sql` y `013_plan_nombre_carrera.sql`
    (crea todas las tablas, RLS y funciones necesarias).
 3. Copia `.env.local.example` a `.env.local` y completa con los datos de tu proyecto
    (Settings → API en el dashboard de Supabase):
