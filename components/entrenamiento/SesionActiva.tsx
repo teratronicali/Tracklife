@@ -38,6 +38,7 @@ interface ExercicioSesion {
   distanciaObjetivoKm: number | null
   duracionObjetivoMin: number | null
   notasCardio: string | null
+  ritmoObjetivo: string | null
   cardio: CardioEnCurso
 }
 
@@ -93,6 +94,7 @@ export default function SesionActiva({
       distanciaObjetivoKm: re.distancia_objetivo_km,
       duracionObjetivoMin: re.duracion_objetivo_min,
       notasCardio: re.notas_cardio,
+      ritmoObjetivo: re.ritmo_objetivo,
       sets: Array.from({ length: re.series_objetivo }, () => ({
         reps: '',
         peso: re.peso_objetivo ? String(re.peso_objetivo) : '',
@@ -398,6 +400,11 @@ export default function SesionActiva({
                   .join(' en ') || 'a tu ritmo'}
                 {actual.previa && <span> · Anterior: {actual.previa}</span>}
               </p>
+              {actual.ritmoObjetivo && (
+                <p className="font-medium" style={{ color: 'var(--tl-blue)' }}>
+                  Ritmo objetivo: {actual.ritmoObjetivo}
+                </p>
+              )}
               {actual.notasCardio && <p>{actual.notasCardio}</p>}
             </div>
           ) : (

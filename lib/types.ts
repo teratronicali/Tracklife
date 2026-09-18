@@ -156,6 +156,7 @@ export interface RutinaEjercicio {
   distancia_objetivo_km: number | null
   duracion_objetivo_min: number | null
   notas_cardio: string | null
+  ritmo_objetivo: string | null
   ejercicio?: Ejercicio
 }
 
@@ -183,6 +184,8 @@ export interface PlanEntrenamiento {
   duracion_semanas: number | null
   fecha_inicio: string
   fecha_objetivo: string | null
+  test_distancia_km: number | null
+  test_tiempo_seg: number | null
   created_at: string
 }
 

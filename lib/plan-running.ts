@@ -36,6 +36,57 @@ const SEMANAS_MAX = 24
 
 const FONDO_PICO_KM: Record<Exclude<ObjetivoRunning, 'general'>, number> = { '5k': 8, '10k': 13, '21k': 18, maraton: 32 }
 const FONDO_INICIAL_KM: Record<Exclude<ObjetivoRunning, 'general'>, number> = { '5k': 3, '10k': 5, '21k': 8, maraton: 14 }
+const DISTANCIA_OBJETIVO_KM: Record<Exclude<ObjetivoRunning, 'general'>, number> = { '5k': 5, '10k': 10, '21k': 21.0975, maraton: 42.195 }
+
+export interface TestInicialRunning {
+  distanciaKm: number
+  tiempoSeg: number
+}
+
+export interface RitmosCarrera {
+  ritmo5kSegKm: number
+  facilSegKm: number
+  umbralSegKm: number
+  intervaloSegKm: number
+  repeticionSegKm: number
+}
+
+// A partir de un test de ritmo (una carrera reciente o un time trial: "corri
+// X km en Y minutos"), predice el ritmo actual de 5K con la formula de Riegel
+// (T2 = T1 * (D2/D1)^1.06, el estandar para predecir tiempos entre distancias
+// a partir de un resultado real) y de ahi deriva las zonas de entrenamiento
+// como porcentajes del ritmo de 5K — la misma logica que usan calculadoras
+// tipo Jack Daniels/McMillan: facil ~25-30% mas lento, umbral/tempo ~7% mas
+// lento, intervalos (series cortas fuertes) cerca del ritmo de 5K,
+// repeticiones (series muy cortas, ej. 400m) mas rapido que el ritmo de 5K.
+export function calcularRitmos(distanciaKm: number, tiempoSeg: number): RitmosCarrera {
+  const tiempo5kSeg = tiempoSeg * Math.pow(5 / distanciaKm, 1.06)
+  const ritmo5kSegKm = tiempo5kSeg / 5
+  return {
+    ritmo5kSegKm,
+    facilSegKm: ritmo5kSegKm * 1.28,
+    umbralSegKm: ritmo5kSegKm * 1.07,
+    intervaloSegKm: ritmo5kSegKm * 0.98,
+    repeticionSegKm: ritmo5kSegKm * 0.9,
+  }
+}
+
+// Ritmo objetivo de carrera para una distancia especifica, prediciendo desde
+// el ritmo de 5K con la misma formula de Riegel (en vez de un porcentaje fijo,
+// para que la caida de ritmo entre 5K y maraton sea realista).
+export function ritmoObjetivoSegKm(ritmos: RitmosCarrera, objetivo: Exclude<ObjetivoRunning, 'general'>): number {
+  const distancia = DISTANCIA_OBJETIVO_KM[objetivo]
+  const tiempo5kSeg = ritmos.ritmo5kSegKm * 5
+  const tiempoObjetivoSeg = tiempo5kSeg * Math.pow(distancia / 5, 1.06)
+  return tiempoObjetivoSeg / distancia
+}
+
+export function formatoRitmo(segPorKm: number): string {
+  const total = Math.round(segPorKm)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${m}:${String(s).padStart(2, '0')} min/km`
+}
 
 export function semanasHastaFecha(fechaObjetivo: string): number {
   const hoy = inicioSemana(new Date())
@@ -117,6 +168,7 @@ interface CarreraDia {
   distanciaKm?: number
   duracionMin?: number
   notas?: string
+  ritmoTexto?: string
 }
 
 interface DiaGenerado {
@@ -133,8 +185,10 @@ function generarSemana(params: {
   fases: Fases
   nivel: NivelRunning
   objetivo: ObjetivoRunning
+  ritmos: RitmosCarrera | null
 }): DiaGenerado[] {
-  const { semana, fases, nivel, objetivo } = params
+  const { semana, fases, nivel, objetivo, ritmos } = params
+  const ritmoFacil = ritmos ? formatoRitmo(ritmos.facilSegKm) : undefined
   const fase = faseDeSemana(semana, fases)
   const esPrincipiante = nivel === 'nunca_corrido' || nivel === 'principiante'
   const objetivoConDistancia = objetivo !== 'general'
@@ -162,9 +216,9 @@ function generarSemana(params: {
       const progreso = totalFase > 1 ? (semanaEnFase - 1) / (totalFase - 1) : 1
       const distanciaPico = FONDO_PICO_KM[objetivo]
       const distancia = fase === 'peak' ? FONDO_PICO_KM[objetivo] * (0.6 + 0.4 * progreso) : distanciaPico * (0.7 - 0.3 * progreso)
-      dias[0] = { diaSemana: 0, tipo: 'carrera', carrera: { nombre: 'Rodaje suave', tipoActividad: 'running', distanciaKm: Number((distancia * 0.5).toFixed(1)) } }
-      dias[2] = { diaSemana: 2, tipo: 'carrera', carrera: { nombre: 'Rodaje suave', tipoActividad: 'running', distanciaKm: Number((distancia * 0.6).toFixed(1)) } }
-      dias[5] = { diaSemana: 5, tipo: 'carrera', carrera: { nombre: 'Fondo largo', tipoActividad: 'running', distanciaKm: Number(distancia.toFixed(1)) } }
+      dias[0] = { diaSemana: 0, tipo: 'carrera', carrera: { nombre: 'Rodaje suave', tipoActividad: 'running', distanciaKm: Number((distancia * 0.5).toFixed(1)), ritmoTexto: ritmoFacil } }
+      dias[2] = { diaSemana: 2, tipo: 'carrera', carrera: { nombre: 'Rodaje suave', tipoActividad: 'running', distanciaKm: Number((distancia * 0.6).toFixed(1)), ritmoTexto: ritmoFacil } }
+      dias[5] = { diaSemana: 5, tipo: 'carrera', carrera: { nombre: 'Fondo largo', tipoActividad: 'running', distanciaKm: Number(distancia.toFixed(1)), ritmoTexto: ritmoFacil } }
     }
     dias[1] = { diaSemana: 1, tipo: 'fuerza' }
     dias[4] = { diaSemana: 4, tipo: 'fuerza' }
@@ -173,9 +227,13 @@ function generarSemana(params: {
 
   // --- Sin objetivo especifico: plan continuo de mantenimiento ---
   if (!objetivoConDistancia) {
-    dias[0] = { diaSemana: 0, tipo: 'carrera', carrera: { nombre: 'Rodaje suave', tipoActividad: 'running', duracionMin: 30 } }
-    dias[2] = { diaSemana: 2, tipo: 'carrera', carrera: { nombre: 'Series', tipoActividad: 'running', notas: SERIES_BUILD[0] } }
-    dias[5] = { diaSemana: 5, tipo: 'carrera', carrera: { nombre: 'Fondo largo', tipoActividad: 'running', distanciaKm: 10 } }
+    dias[0] = { diaSemana: 0, tipo: 'carrera', carrera: { nombre: 'Rodaje suave', tipoActividad: 'running', duracionMin: 30, ritmoTexto: ritmoFacil } }
+    dias[2] = {
+      diaSemana: 2,
+      tipo: 'carrera',
+      carrera: { nombre: 'Series', tipoActividad: 'running', notas: SERIES_BUILD[0], ritmoTexto: ritmos ? formatoRitmo(ritmos.repeticionSegKm) : undefined },
+    }
+    dias[5] = { diaSemana: 5, tipo: 'carrera', carrera: { nombre: 'Fondo largo', tipoActividad: 'running', distanciaKm: 10, ritmoTexto: ritmoFacil } }
     dias[1] = { diaSemana: 1, tipo: 'fuerza' }
     dias[4] = { diaSemana: 4, tipo: 'fuerza' }
     dias[3] = { diaSemana: 3, tipo: nivel === 'avanzado' || nivel === 'intermedio' ? 'pliometria' : 'descanso' }
@@ -207,22 +265,32 @@ function generarSemana(params: {
   const diasSemana = nivel === 'avanzado' ? (objetivo === 'maraton' || objetivo === '21k' ? 5 : 4) : 4
 
   // Long run: sabado. Calidad: martes (si aplica). Facil: resto.
-  dias[5] = { diaSemana: 5, tipo: 'carrera', carrera: { nombre: 'Fondo largo', tipoActividad: 'running', distanciaKm: Number(fondoKm.toFixed(1)) } }
+  dias[5] = { diaSemana: 5, tipo: 'carrera', carrera: { nombre: 'Fondo largo', tipoActividad: 'running', distanciaKm: Number(fondoKm.toFixed(1)), ritmoTexto: ritmoFacil } }
 
   const hayCalidad = fase !== 'base' && fase !== 'taper'
   if (hayCalidad) {
     const notasSerie = fase === 'build' ? SERIES_BUILD[semana % SERIES_BUILD.length] : SERIES_PEAK[objetivo]
     const esTempoState = fase === 'build' && semana % 2 === 0
+    const esPeak = fase === 'peak'
     dias[2] = esTempoState
-      ? { diaSemana: 2, tipo: 'carrera', carrera: { nombre: 'Tempo run', tipoActividad: 'running', duracionMin: 20 } }
-      : { diaSemana: 2, tipo: 'carrera', carrera: { nombre: 'Series', tipoActividad: 'running', notas: notasSerie } }
+      ? { diaSemana: 2, tipo: 'carrera', carrera: { nombre: 'Tempo run', tipoActividad: 'running', duracionMin: 20, ritmoTexto: ritmos ? formatoRitmo(ritmos.umbralSegKm) : undefined } }
+      : {
+          diaSemana: 2,
+          tipo: 'carrera',
+          carrera: {
+            nombre: 'Series',
+            tipoActividad: 'running',
+            notas: notasSerie,
+            ritmoTexto: ritmos ? formatoRitmo(esPeak ? ritmoObjetivoSegKm(ritmos, objetivo) : ritmos.repeticionSegKm) : undefined,
+          },
+        }
   } else {
-    dias[2] = { diaSemana: 2, tipo: 'carrera', carrera: { nombre: 'Rodaje suave', tipoActividad: 'running', distanciaKm: Number((fondoKm * 0.45).toFixed(1)) } }
+    dias[2] = { diaSemana: 2, tipo: 'carrera', carrera: { nombre: 'Rodaje suave', tipoActividad: 'running', distanciaKm: Number((fondoKm * 0.45).toFixed(1)), ritmoTexto: ritmoFacil } }
   }
 
-  dias[0] = { diaSemana: 0, tipo: 'carrera', carrera: { nombre: 'Trote regenerativo', tipoActividad: 'running', duracionMin: 25 } }
+  dias[0] = { diaSemana: 0, tipo: 'carrera', carrera: { nombre: 'Trote regenerativo', tipoActividad: 'running', duracionMin: 25, ritmoTexto: ritmoFacil } }
   if (diasSemana >= 5) {
-    dias[6] = { diaSemana: 6, tipo: 'carrera', carrera: { nombre: 'Rodaje suave', tipoActividad: 'running', distanciaKm: Number((fondoKm * 0.35).toFixed(1)) } }
+    dias[6] = { diaSemana: 6, tipo: 'carrera', carrera: { nombre: 'Rodaje suave', tipoActividad: 'running', distanciaKm: Number((fondoKm * 0.35).toFixed(1)), ritmoTexto: ritmoFacil } }
   }
 
   dias[1] = { diaSemana: 1, tipo: 'fuerza' }
@@ -256,20 +324,25 @@ export interface OpcionesPlanRunning {
   nivel: NivelRunning
   objetivo: ObjetivoRunning
   fechaObjetivo: string | null
+  testInicial?: TestInicialRunning | null
 }
 
 // Arma y guarda un plan de running periodizado (o continuo, si no hay
 // objetivo de carrera): fuerza 2x/semana, pliometria si aplica, progresion
 // del fondo largo con semanas de descarga, series/tempo desde la fase build,
-// y taper final. Devuelve el plan ya materializado con sus dias y rutinas.
+// y taper final. Si se paso un test inicial (distancia + tiempo de una
+// carrera reciente o time trial), cada sesion de carrera queda con un ritmo
+// objetivo especifico (min/km) ademas de la distancia/duracion. Devuelve el
+// plan ya materializado con sus dias y rutinas.
 export async function generarPlanRunning(supabase: SupabaseClient, usuarioId: string, opciones: OpcionesPlanRunning): Promise<PlanConDias> {
-  const { nivel, objetivo, fechaObjetivo } = opciones
+  const { nivel, objetivo, fechaObjetivo, testInicial } = opciones
   const esContinuo = objetivo === 'general'
   const totalSemanas = esContinuo ? 1 : calcularDuracionPlan(nivel, objetivo, fechaObjetivo)
   const fases = calcularFases(totalSemanas, objetivo)
+  const ritmos = testInicial ? calcularRitmos(testInicial.distanciaKm, testInicial.tiempoSeg) : null
 
   const semanasGeneradas: DiaGenerado[][] = Array.from({ length: totalSemanas }, (_, i) =>
-    generarSemana({ semana: i + 1, fases, nivel, objetivo })
+    generarSemana({ semana: i + 1, fases, nivel, objetivo, ritmos })
   )
 
   await supabase.from('planes_entrenamiento').update({ activo: false }).eq('usuario_id', usuarioId).eq('activo', true)
@@ -383,6 +456,7 @@ export async function generarPlanRunning(supabase: SupabaseClient, usuarioId: st
     distancia_objetivo_km: dia.carrera!.distanciaKm ?? null,
     duracion_objetivo_min: dia.carrera!.duracionMin ?? null,
     notas_cardio: dia.carrera!.notas ?? null,
+    ritmo_objetivo: dia.carrera!.ritmoTexto ?? null,
   }))
   const { data: itemsCarrera, error: errorItemsCarrera } =
     filasCarrera.length > 0 ? await supabase.from('rutina_ejercicios').insert(filasCarrera).select('*, ejercicio:ejercicios(*)') : { data: [], error: null }
@@ -404,6 +478,8 @@ export async function generarPlanRunning(supabase: SupabaseClient, usuarioId: st
       duracion_semanas: esContinuo ? null : totalSemanas,
       fecha_inicio: fechaISO(new Date()),
       fecha_objetivo: esContinuo ? null : fechaObjetivo,
+      test_distancia_km: testInicial?.distanciaKm ?? null,
+      test_tiempo_seg: testInicial?.tiempoSeg ?? null,
     })
     .select()
     .single()

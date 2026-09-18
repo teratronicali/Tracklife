@@ -63,11 +63,61 @@ export interface DiaCalendario {
   rutina: RutinaConEjercicios | null
   estado: PlanDiaEstado | null
   esCompensacion: boolean
+  semanaPrograma: number
+  planDiaId: string | null
 }
 
-// Combina la plantilla semanal (plan_dias) con lo que realmente paso cada
+function construirDiaCalendario(plan: PlanConDias, estadosPorFecha: Map<string, PlanDiaEstado>, rutinas: RutinaConEjercicios[], fecha: Date, hoyISO: string): DiaCalendario {
+  const fechaStr = fechaISO(fecha)
+  const diaSemana = diaSemanaISO(fecha)
+  const semanaPrograma = calcularSemanaPrograma(plan, fecha)
+  const plantilla = plan.dias.find((d) => d.dia_semana === diaSemana && d.semana === semanaPrograma)
+  const estado = estadosPorFecha.get(fechaStr) ?? null
+
+  let rutina: RutinaConEjercicios | null = null
+  let esCompensacion = false
+  if (estado?.estado === 'compensado' && estado.rutina_id) {
+    rutina = rutinas.find((r) => r.id === estado.rutina_id) ?? null
+    esCompensacion = true
+  } else if (plantilla?.rutina) {
+    rutina = plantilla.rutina
+  }
+
+  return {
+    fecha: fechaStr,
+    diaSemana,
+    nombreDia: DIAS_SEMANA[diaSemana],
+    esHoy: fechaStr === hoyISO,
+    esPasado: fechaStr < hoyISO,
+    rutina,
+    estado,
+    esCompensacion,
+    semanaPrograma,
+    planDiaId: plantilla?.id ?? null,
+  }
+}
+
+// Combina la plantilla del plan (plan_dias) con lo que realmente paso cada
 // fecha (plan_dia_estados: cumplido/incumplido/compensado) para pintar el
-// calendario de una semana concreta.
+// calendario de cualquier rango de fechas (una semana, un mes, lo que sea).
+export function construirCalendarioRango(
+  plan: PlanConDias,
+  estados: PlanDiaEstado[],
+  rutinas: RutinaConEjercicios[],
+  fechaInicio: Date,
+  fechaFin: Date,
+  hoyISO: string
+): DiaCalendario[] {
+  const estadosPorFecha = new Map(estados.map((e) => [e.fecha, e]))
+  const dias: DiaCalendario[] = []
+  let cursor = fechaInicio
+  while (fechaISO(cursor) <= fechaISO(fechaFin)) {
+    dias.push(construirDiaCalendario(plan, estadosPorFecha, rutinas, cursor, hoyISO))
+    cursor = sumarDias(cursor, 1)
+  }
+  return dias
+}
+
 export function construirCalendarioSemana(
   plan: PlanConDias,
   estados: PlanDiaEstado[],
@@ -75,34 +125,15 @@ export function construirCalendarioSemana(
   inicioLunes: Date,
   hoyISO: string
 ): DiaCalendario[] {
-  const estadosPorFecha = new Map(estados.map((e) => [e.fecha, e]))
-  return fechasSemana(inicioLunes).map((fecha) => {
-    const fechaStr = fechaISO(fecha)
-    const diaSemana = diaSemanaISO(fecha)
-    const semanaPrograma = calcularSemanaPrograma(plan, fecha)
-    const plantilla = plan.dias.find((d) => d.dia_semana === diaSemana && d.semana === semanaPrograma)
-    const estado = estadosPorFecha.get(fechaStr) ?? null
+  return construirCalendarioRango(plan, estados, rutinas, inicioLunes, sumarDias(inicioLunes, 6), hoyISO)
+}
 
-    let rutina: RutinaConEjercicios | null = null
-    let esCompensacion = false
-    if (estado?.estado === 'compensado' && estado.rutina_id) {
-      rutina = rutinas.find((r) => r.id === estado.rutina_id) ?? null
-      esCompensacion = true
-    } else if (plantilla?.rutina) {
-      rutina = plantilla.rutina
-    }
-
-    return {
-      fecha: fechaStr,
-      diaSemana,
-      nombreDia: DIAS_SEMANA[diaSemana],
-      esHoy: fechaStr === hoyISO,
-      esPasado: fechaStr < hoyISO,
-      rutina,
-      estado,
-      esCompensacion,
-    }
-  })
+// Lunes de la semana que contiene el dia 1 del mes de `fecha` — punto de
+// partida de una grilla de calendario mensual (siempre 6 semanas = 42 dias,
+// para que el layout no salte de tamaño entre meses).
+export function inicioCuadriculaMes(fecha: Date): Date {
+  const primerDia = new Date(fecha.getFullYear(), fecha.getMonth(), 1)
+  return inicioSemana(primerDia)
 }
 
 export async function fetchEstadosPlan(

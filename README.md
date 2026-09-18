@@ -45,6 +45,16 @@ pero con identidad propia en azul/negro/blanco.
     carrera + prevencion de lesiones por sobreuso) y **pliometria 1x/semana** desde build solo
     para nivel intermedio/avanzado — siempre respetando al menos un dia de descanso completo.
     El calendario muestra "Semana X de Y" y la cuenta regresiva a la fecha objetivo.
+    Antes de generarlo puedes hacer un **test inicial de ritmo** (corre una distancia conocida
+    y anota tu tiempo): con eso se calculan tus zonas de ritmo (facil, umbral/tempo, series y
+    ritmo objetivo de carrera segun la formula de Riegel) y cada sesion del plan queda con un
+    **ritmo especifico en min/km**, no solo distancia/duracion — se ve tanto en el calendario
+    como dentro de la sesion activa al entrenar. El calendario tiene **vista de semana o de
+    mes completo** (con navegacion hacia adelante/atras) para ver que entrenos vienen, y
+    cualquier dia (de hoy en adelante) se puede **editar o mover**: click en "Editar / mover"
+    (o en el dia, en vista de mes) abre un panel para dejarlo en descanso, asignarle cualquiera
+    de tus rutinas, armar una sesion de carrera a la medida (nombre, distancia, duracion, ritmo
+    y notas) o **intercambiarlo** con cualquier otro dia visible en el calendario.
   - **Entrenamientos**: arma **rutinas** de gimnasio (ejercicios + series/reps/peso/descanso
     objetivo) o de **cardio/deporte** (cualquier actividad — running, ciclismo, natacion,
     escalada, lo que sea, con distancia/duracion objetivo) e iniciala para una **sesion
@@ -107,7 +117,8 @@ Todo esto vive en `lib/gamification.ts` (tabla de XP, rangos, formula de nivel) 
    `supabase/migrations/001_init.sql`, `002_onboarding_strava.sql`, `003_planes_pagos.sql`,
    `004_racha_bonus.sql`, `005_rutinas_sesiones.sql`, `006_planes_entrenamiento.sql`,
    `007_plan_dia_estados.sql`, `008_tipos_meta.sql`, `009_ejercicio_video.sql`,
-   `010_grupos_musculares.sql` y `011_plan_multisemana_running.sql`
+   `010_grupos_musculares.sql`, `011_plan_multisemana_running.sql` y
+   `012_plan_ritmos_edicion.sql`
    (crea todas las tablas, RLS y funciones necesarias).
 3. Copia `.env.local.example` a `.env.local` y completa con los datos de tu proyecto
    (Settings → API en el dashboard de Supabase):
