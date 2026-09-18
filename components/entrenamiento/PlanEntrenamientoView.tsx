@@ -243,7 +243,8 @@ export default function PlanEntrenamientoView({
       router.refresh()
     } catch (err) {
       console.error('Error generando plan de running:', err)
-      toast.error('No se pudo generar el plan de running')
+      const mensaje = err && typeof err === 'object' && 'message' in err ? String((err as { message: unknown }).message) : null
+      toast.error(mensaje ? `No se pudo generar el plan: ${mensaje}` : 'No se pudo generar el plan de running')
     } finally {
       setAplicando(null)
     }
@@ -672,8 +673,15 @@ export default function PlanEntrenamientoView({
               <div className="grid grid-cols-7 gap-1">
                 {calendario.map((dia) => {
                   const enMes = new Date(`${dia.fecha}T00:00:00`).getMonth() === mesVista.getMonth()
-                  const colorTipo = dia.rutina ? (dia.rutina.tipo === 'cardio' ? 'var(--tl-green)' : 'var(--tl-blue)') : null
-                  const colorEstado = dia.estado?.estado === 'incumplido' ? 'var(--tl-red)' : dia.estado?.estado === 'compensado' ? 'var(--tl-amber)' : colorTipo
+                  // El color codifica que paso (o que va a pasar), no el tipo de entreno:
+                  // verde solido = hecho, rojo = incumplido, ambar = compensado/movido,
+                  // borde azul = programado (lo que viene), borde gris = paso sin registrar.
+                  let punto: { relleno?: string; borde?: string } | null = null
+                  if (dia.estado?.estado === 'cumplido') punto = { relleno: 'var(--tl-green)' }
+                  else if (dia.estado?.estado === 'incumplido') punto = { relleno: 'var(--tl-red)' }
+                  else if (dia.estado?.estado === 'compensado') punto = { relleno: 'var(--tl-amber)' }
+                  else if (dia.rutina && dia.esPasado) punto = { borde: 'var(--tl-muted)' }
+                  else if (dia.rutina) punto = { borde: 'var(--tl-blue)' }
                   return (
                     <button
                       key={dia.fecha}
@@ -682,11 +690,32 @@ export default function PlanEntrenamientoView({
                       style={{ borderColor: dia.esHoy ? 'var(--tl-blue)' : 'var(--tl-border)', opacity: enMes ? 1 : 0.35 }}
                     >
                       <span className="text-[10px] text-muted">{Number(dia.fecha.slice(8, 10))}</span>
-                      {colorEstado && <span className="w-1.5 h-1.5 rounded-full" style={{ background: colorEstado }} />}
-                      {dia.estado?.estado === 'cumplido' && <Check size={10} style={{ color: 'var(--tl-green)' }} />}
+                      {punto && (
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={punto.relleno ? { background: punto.relleno } : { border: `1.5px solid ${punto.borde}` }}
+                        />
+                      )}
                     </button>
                   )
                 })}
+              </div>
+              <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] text-muted">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ background: 'var(--tl-green)' }} /> Hecho
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ border: '1.5px solid var(--tl-blue)' }} /> Programado
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ background: 'var(--tl-red)' }} /> Incumplido
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ background: 'var(--tl-amber)' }} /> Compensado
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ border: '1.5px solid var(--tl-muted)' }} /> Sin registrar
+                </span>
               </div>
             </div>
           ) : (
@@ -837,20 +866,20 @@ export default function PlanEntrenamientoView({
                     </div>
                   )}
 
-                  {nivelRunning !== 'nunca_corrido' && (
-                    <div className="space-y-2 border-t border-border pt-3">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-xs font-medium text-muted">Test inicial de ritmo (recomendado)</label>
-                        <button type="button" onClick={() => setOmitirTest((v) => !v)} className="text-[11px] underline text-muted shrink-0 ml-2">
-                          {omitirTest ? 'Quiero hacer el test' : 'Omitir'}
-                        </button>
-                      </div>
-                      {!omitirTest && (
-                        <>
-                          <p className="text-[11px] text-muted">
-                            Corre lo mas fuerte que puedas una distancia conocida (por ejemplo 3 km) y anota tu tiempo. Con eso calculamos a
-                            que ritmo (min/km) debes correr cada sesion del plan.
-                          </p>
+                  <div className="space-y-2 border-t border-border pt-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-medium text-muted">Test inicial de ritmo (recomendado)</label>
+                      <button type="button" onClick={() => setOmitirTest((v) => !v)} className="text-[11px] underline text-muted shrink-0 ml-2">
+                        {omitirTest ? 'Quiero hacer el test' : 'Omitir'}
+                      </button>
+                    </div>
+                    {!omitirTest && (
+                      <>
+                        <p className="text-[11px] text-muted">
+                          {nivelRunning === 'nunca_corrido'
+                            ? 'Si nunca has corrido probablemente no puedas hacer este test todavia — no pasa nada, dejalo en blanco. En cuanto puedas, camina/corre 1-2 km a buen esfuerzo y anota tu tiempo: en cuanto el plan pase a trote continuo, usaremos eso para darte un ritmo objetivo.'
+                            : 'Corre lo mas fuerte que puedas una distancia conocida (por ejemplo 3 km) y anota tu tiempo. Con eso calculamos a que ritmo (min/km) debes correr cada sesion del plan.'}
+                        </p>
                           <div className="grid grid-cols-3 gap-2">
                             <div>
                               <label className="block text-[10px] text-muted mb-1">Distancia (km)</label>
@@ -890,10 +919,9 @@ export default function PlanEntrenamientoView({
                               )}
                             </div>
                           )}
-                        </>
-                      )}
-                    </div>
-                  )}
+                      </>
+                    )}
+                  </div>
 
                   <p className="text-[11px] text-muted">{resumenPlanRunning({ nivel: nivelRunning, objetivo: objetivoRunning, fechaObjetivo: fechaCarreraRunning || null })}</p>
                   <button onClick={generarRunning} disabled={aplicando === 'running'} className="btn-tl-blue text-xs">
