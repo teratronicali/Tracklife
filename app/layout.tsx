@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Montserrat, Open_Sans } from "next/font/google";
 import "./globals.css";
 import ToasterProvider from "@/components/ToasterProvider";
+import RegistrarServiceWorker from "@/components/RegistrarServiceWorker";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -17,6 +18,18 @@ const openSans = Open_Sans({
 export const metadata: Metadata = {
   title: "TrackLife — Rastrea tu vida",
   description: "Habitos, finanzas, entrenamiento, metas y tareas en un solo lugar. Gana XP, sube de nivel y compite en el ranking.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "TrackLife",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#161616",
 };
 
 export default function RootLayout({
@@ -31,6 +44,7 @@ export default function RootLayout({
       >
         {children}
         <ToasterProvider />
+        <RegistrarServiceWorker />
       </body>
     </html>
   );

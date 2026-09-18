@@ -2,6 +2,9 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const PUBLIC_PREFIXES = ['/login', '/signup']
+// Rutas siempre accesibles sin importar la sesion, y que nunca redirigen
+// (a diferencia de login/signup, no tiene sentido sacar de aqui a alguien logueado).
+const OPEN_PREFIXES = ['/offline']
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request })
@@ -32,6 +35,9 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isLanding = pathname === '/'
   const isAuthOnlyPublic = PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))
+  const isOpen = OPEN_PREFIXES.some((p) => pathname.startsWith(p))
+
+  if (isOpen) return response
 
   if (!user && !isLanding && !isAuthOnlyPublic) {
     const url = request.nextUrl.clone()
@@ -49,5 +55,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|js|webmanifest)$).*)',
+  ],
 }

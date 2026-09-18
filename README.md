@@ -1,7 +1,8 @@
 # TrackLife
 
 App de productividad gamificada: habitos, finanzas, entrenamiento (+ dieta), metas y tareas,
-todo con un sistema de XP, niveles, rachas y un leaderboard global.
+todo con un sistema de XP, niveles, rachas y un leaderboard global. Es una **PWA instalable**:
+desde el navegador (movil o escritorio) se agrega a la pantalla de inicio como una app nativa.
 
 Inspirada en el concepto de apps como StarkLab (habit tracker + neurociencia + gamificacion),
 pero con identidad propia en azul/negro/blanco.
@@ -114,6 +115,18 @@ de alcanzar, pensados para retar al usuario a largo plazo:
 
 Todo esto vive en `lib/gamification.ts` (tabla de XP, rangos, formula de nivel) y
 `lib/xp-client.ts` (helper `otorgarXP` usado por todos los modulos).
+
+## PWA (app instalable)
+
+TrackLife funciona como Progressive Web App: `app/manifest.ts` (se sirve en `/manifest.webmanifest`)
+declara nombre, iconos (`public/icons/`, generados en varios tamaños + una variante maskable) y modo
+`standalone`, y `public/sw.js` es el service worker que la hace instalable. Como la app es dinamica y
+con datos de sesion (Supabase), el service worker **no cachea paginas autenticadas** — siempre pide la
+red primero para que los datos esten frescos, y solo si no hay conexion cae a `/offline` (la unica
+ruta que el service worker deja pre-cacheada). Los assets estaticos (iconos/imagenes) si son
+cache-first para cargar al instante. Se registra desde `components/RegistrarServiceWorker.tsx`, montado
+en `app/layout.tsx`. El middleware (`middleware.ts`) deja pasar `sw.js`, `manifest.webmanifest` y
+`/offline` sin pasar por el chequeo de sesion, para que funcionen tanto logueado como no.
 
 ## Puesta en marcha
 
