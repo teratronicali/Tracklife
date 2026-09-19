@@ -68,6 +68,14 @@ function formatoFecha(fecha: string) {
 
 type TipoEdicionDia = 'descanso' | 'existente' | 'carrera'
 
+// Nombre corto para la celda diminuta del calendario de mes: para gym solo
+// la primera palabra ("Fuerza para corredores" -> "Fuerza"), para cardio el
+// nombre completo (ya suele ser corto) sin el sufijo de semana.
+function etiquetaCortaDia(rutina: RutinaConEjercicios): string {
+  const nombreLimpio = rutina.nombre.replace(/ — semana \d+$/, '')
+  return rutina.tipo === 'gym' ? nombreLimpio.split(' ')[0] : nombreLimpio
+}
+
 function resumenSesionCardio(rutina: RutinaConEjercicios): { texto: string; ritmo: string | null } | null {
   if (rutina.tipo !== 'cardio') return null
   const it = rutina.ejercicios[0]
@@ -688,16 +696,21 @@ export default function PlanEntrenamientoView({
                     <button
                       key={dia.fecha}
                       onClick={() => abrirEdicion(dia)}
-                      className="aspect-square rounded-lg border p-1 flex flex-col items-center justify-start gap-1 pt-1.5"
+                      className="min-h-[58px] rounded-lg border p-1 flex flex-col items-stretch justify-start gap-1 text-left overflow-hidden"
                       style={{ borderColor: dia.esHoy ? 'var(--tl-blue)' : 'var(--tl-border)', opacity: enMes ? 1 : 0.35 }}
                     >
-                      <span className="text-[10px] text-muted">{Number(dia.fecha.slice(8, 10))}</span>
-                      {punto && (
-                        <span
-                          className="w-2 h-2 rounded-full"
-                          style={punto.relleno ? { background: punto.relleno } : { border: `1.5px solid ${punto.borde}` }}
-                        />
-                      )}
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[10px] text-muted">{Number(dia.fecha.slice(8, 10))}</span>
+                        {punto && (
+                          <span
+                            className="w-1.5 h-1.5 rounded-full shrink-0"
+                            style={punto.relleno ? { background: punto.relleno } : { border: `1.5px solid ${punto.borde}` }}
+                          />
+                        )}
+                      </div>
+                      <span className="text-[9px] leading-tight truncate" style={{ color: dia.rutina ? 'var(--tl-fg)' : 'var(--tl-muted)' }}>
+                        {dia.rutina ? etiquetaCortaDia(dia.rutina) : 'Descanso'}
+                      </span>
                     </button>
                   )
                 })}
